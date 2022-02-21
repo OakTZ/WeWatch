@@ -1,0 +1,23 @@
+{
+    "name": "WeWatch",
+    "version": "1.0",
+    "manifest_version": 3,
+    "permissions": [ 
+      "tabs"
+    ],
+    "background": {
+      "service_worker": "background.js"
+      
+    },
+    "action":{
+      "default_icon":{
+        "16":"pics/logo.png",
+        "48":"pics/logo.png",
+        "128":"pics/logo.png"  
+      },
+      "default_popup": "htmls/dif_popup.html",
+      "default_title": "WeWatch$"
+    }
+    
+  }
+  
