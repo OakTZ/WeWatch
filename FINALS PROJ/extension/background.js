@@ -28,11 +28,13 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
         u = tab.url;
         console.log("OnActivated-you are here: "+u);
         if(String(u).includes("https://www.youtube.com/watch")){
+            
             console.log("YOUTUBE")
-            //chrome.windows.create({'url': 'htmls/watching_popup.html', 'type': 'popup'}, function(window) {
-            //});
 
-            //chrome.browserAction.setPopup({popup: 'popup.html'});
+            chrome.action.setPopup({popup: 'htmls/watching_popup.html'});
+        }
+        else{
+            chrome.action.setPopup({popup: 'htmls/dif_popup.html'});
         }
 
         conn_and_recv("OnActivated: "+u)
