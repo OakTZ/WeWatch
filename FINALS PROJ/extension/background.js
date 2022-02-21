@@ -9,6 +9,11 @@
 // See https://developer.chrome.com/docs/extensions/reference/events/ for additional details.  
 
 var id
+var input
+
+function hara(inpuyt){
+    input = inpuyt
+}
 
 chrome.runtime.onInstalled.addListener(async () => {
     let url = chrome.runtime.getURL("htmls/hello.html");
@@ -28,7 +33,7 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
         u = tab.url;
         console.log("OnActivated-you are here: "+u);
         if(String(u).includes("https://www.youtube.com/watch")){
-            
+
             console.log("YOUTUBE")
 
             chrome.action.setPopup({popup: 'htmls/watching_popup.html'});
