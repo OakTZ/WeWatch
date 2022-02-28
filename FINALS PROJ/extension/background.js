@@ -9,26 +9,26 @@
 // See https://developer.chrome.com/docs/extensions/reference/events/ for additional details.  
 
 var id
-var input
 
-function hara(inpuyt){
-    input = inpuyt
-}
 
+//WHEN THE EXTENTION IS BEING INSTALLED
 chrome.runtime.onInstalled.addListener(async () => {
+
+    //opens welcome page
     let url = chrome.runtime.getURL("htmls/hello.html");
     let tab = await chrome.tabs.create({ url });
     console.log(`Created tab ${tab.id}`);
 
-   id=conn_and_recv("get_id")
+    //recives id from server
+    id=conn_and_recv("get_id")
 
 }
 )
 
-
+//ON ACTIVATED TAB INB CHROME
 chrome.tabs.onActivated.addListener( function(activeInfo){
 
-    
+    //checks current tab and update the popup accordingly
     chrome.tabs.get(activeInfo.tabId, function(tab){
         u = tab.url;
         console.log("OnActivated-you are here: "+u);
@@ -45,6 +45,7 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
         conn_and_recv("OnActivated: "+u)
     }); 
     
+
     /*
     chrome.tabs.get(activeInfo.tabId, function(tab){
         u = tab.url;
@@ -55,6 +56,7 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
 });
 
 
+//WHEN OPENING A NEW TAB IN CHROME
 chrome.tabs.onUpdated.addListener(async (tabId, change, tab) => {
 
 
@@ -93,7 +95,21 @@ chrome.tabs.onUpdated.addListener(async (tabId, change, tab) => {
 });
   
 
+//LISTEN TO MESSAGE OVER CONTENT SCRIPT
+chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
+    console.log("onmessage")
+    if (message == 'create new watching room') {
 
+        console.log("create a watching room XDLOLXDLOL")
+        sendResponse('got and delivered')
+
+    }
+
+});
+
+
+
+//--------------------------DEFS--------------------------------
 
 function conn_and_recv(msg){
     var connection = new WebSocket('ws://localhost:8765'); //let
