@@ -1,31 +1,58 @@
+from math import comb
 import websockets
 import asyncio
+import string
+import random
 
 #SETTING UP VARIABLES AND FUNCTIONS#
 
 global ids
-ids=[(0,"xxx")]
+ids={"ID":"x"} #ID=8TTTF  #to delete do del ids["ID"]
 
 global rooms
-rooms=[[0,"url","x","y","z"]]
+rooms={"ID":(["password","url"],["x","y","z"])} #ID=6FFTF , "password=4TTTF"
+
+global used_combs
+used_combs=[]
 
 def create_new_id(client): 
     global ids
-    last=ids[-1][0]  #len(ids)-1
-    new_id=last+1
-    ids.append((new_id,client))
+    new_id=generate_comb(8,True,True,True,False)
+    ids[new_id]=client
     return new_id
                 
-def create_new_room(client,url):
+def create_new_room(soc_id,url):
     global rooms
-    last=rooms[-1][0]
-    new_room_num=last+1
-    rooms.append([new_room_num,url,client])
+    new_id=generate_comb(6,False,False,True,False)
+    password=generate_comb(4,True,True,True,False)
+    rooms[new_id]=([password,url],[soc_id])
     print(rooms)
-            
+    return new_id
+
+def generate_comb(length,lowercase,uppercase,digits,symbols):
+    global used_combs
+    lst=""
+    #list of all lowercase, uppercase, digits and symbols
+    if lowercase:
+        lst+=string.ascii_lowercase
+    if uppercase:
+        lst+=string.ascii_uppercase
+    if digits:
+        lst+=string.digits
+    if symbols:
+        lst+=string.punctuation
+    while True:
+        temp=random.sample(lst,length)
+        comb="".join(temp)
+        if comb not in used_combs:
+            used_combs.append(comb)
+            return comb
+    
+
+
 #MAIN CODE#
 
-async def listen(websocket, path):
+async def listen(websocket,path):
     global rooms
 
     async for message in websocket:
@@ -33,15 +60,30 @@ async def listen(websocket, path):
         if (message=="get_id"):
 
             print("exe needs id")
-            new_id=str(create_new_id(websocket))
-            print(new_id)
-            await websocket.send(new_id)
+            soc_id=(create_new_id(websocket))
+            print(soc_id)
+            await websocket.send(soc_id)
 
         if ("create_room," in message):
 
-            url=message.split(',')[-1]
-            create_new_room(websocket,url)
-            await websocket.send("created a new room numbered: "+ str(rooms[-1][0]))
+            data=message.split(',')
+            url=data[1]
+            soc_id=data[-1]
+            room_id=create_new_room(soc_id,url)
+            await websocket.send("created a new room with ID: "+ room_id+" and with the password: "+rooms[room_id][0][0])
+        
+        if ("join_room," in message):
+            data=message.split(',')
+            room_id=data[1]
+            room_password=data[2]
+            try:
+                if (rooms[room_id][0][0]==room_password):
+                    await websocket.send("TRUE")
+                else:
+                    await websocket.send("FALSE")
+            except:
+                await websocket.send("FALSE")
+
 
         else:
 

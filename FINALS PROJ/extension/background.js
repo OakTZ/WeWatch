@@ -110,16 +110,26 @@ chrome.tabs.onUpdated.addListener(async (tabId, change, tab) => {
 
 //LISTEN TO MESSAGE OVER CONTENT SCRIPT
 chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
-    console.log("onmessage")
+
+    
     if (message == 'create new watching room') {
 
         console.log("create a watching room XDLOLXDLOL")
         sendResponse('got and delivered')
 
-        ans=conn_and_recv("create_room,"+current_tab)
+        var ans=conn_and_recv("create_room,"+current_tab+","+id)
         console.log(ans)
         
     }
+    else if(String(message).includes("enter room,")){
+        data=message.split(',');
+
+        console.log("JOINING ROOM,"+data[1]+","+data[2])
+        var ans=conn_and_recv("join_room,"+data[1]+","+data[2])
+        console.log(ans)
+        sendResponse(ans)
+    }
+
 
 });
 
