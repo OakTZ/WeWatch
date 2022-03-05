@@ -9,7 +9,7 @@ window.onload=function(){
         console.log("PRESSED");
         chrome.runtime.sendMessage('create new watching room', (response) => {
             
-            console.log('received user data', response);
+            //console.log('received user data', response);
 
         });
 

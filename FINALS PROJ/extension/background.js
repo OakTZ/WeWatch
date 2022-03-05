@@ -9,7 +9,7 @@
 // See https://developer.chrome.com/docs/extensions/reference/events/ for additional details.  
 
 var id
-
+var current_tab
 
 //WHEN THE EXTENTION IS BEING INSTALLED
 chrome.runtime.onInstalled.addListener(async () => {
@@ -37,6 +37,9 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
             console.log("YOUTUBE")
 
             chrome.action.setPopup({popup: 'htmls/watching_popup.html'});
+            current_tab=u
+
+            console.log("set current tab to: "+ current_tab)
         }
         else{
             chrome.action.setPopup({popup: 'htmls/dif_popup.html'});
@@ -86,6 +89,16 @@ chrome.tabs.onUpdated.addListener(async (tabId, change, tab) => {
     if (tab.active && change.url) {
         console.log("onUpdated-you are here:change "+change.url); 
         console.log("onUpdated-your id is stiil:"+ id); 
+        
+        if(String(change.url).includes("https://www.youtube.com/watch")){
+
+            console.log("YOUTUBE")
+
+            chrome.action.setPopup({popup: 'htmls/watching_popup.html'});
+            current_tab=change.url
+
+            console.log("set current tab to: "+ current_tab)
+        }
 
         conn_and_recv("onUpdated: "+change.url)
 
@@ -103,6 +116,9 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
         console.log("create a watching room XDLOLXDLOL")
         sendResponse('got and delivered')
 
+        ans=conn_and_recv("create_room,"+current_tab)
+        console.log(ans)
+        
     }
 
 });
