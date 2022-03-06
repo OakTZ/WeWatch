@@ -3,7 +3,8 @@
 
 
 window.onload=function(){
-    try{
+
+    if (document.getElementById("createRoom")){
         document.getElementById("createRoom").addEventListener("click",function(){
 
             chrome.runtime.sendMessage("create new watching room", (response) => {
@@ -13,11 +14,9 @@ window.onload=function(){
             });
 
         });
-    } catch(error){
-        console.log("CATUGHT: "+error)
-    }
+    } 
 
-    try{
+    if (document.getElementById("enterRoom")){
         document.getElementById("enterRoom").addEventListener("click",function(){
 
             var room_id=document.getElementById("room_id").value;
@@ -27,13 +26,12 @@ window.onload=function(){
             console.log(room_password)
             chrome.runtime.sendMessage("enter room,"+room_id+","+room_password, (response) => {
                 
+                console.log("re "+response)
                 document.getElementById("didfind").innerHTML=response;
 
             });
 
         });
-    } catch(error){
-        console.log("CATUGHT: "+error)
-    }
+    } 
 
 }

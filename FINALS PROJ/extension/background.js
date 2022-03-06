@@ -10,6 +10,10 @@
 
 var id
 var current_tab
+var room_id
+var latest_msg
+
+
 
 //WHEN THE EXTENTION IS BEING INSTALLED
 chrome.runtime.onInstalled.addListener(async () => {
@@ -117,17 +121,19 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
         console.log("create a watching room XDLOLXDLOL")
         sendResponse('got and delivered')
 
-        var ans=conn_and_recv("create_room,"+current_tab+","+id)
-        console.log(ans)
+        latest_msg=conn_and_recv("create_room,"+current_tab+","+id)
+        console.log(latest_msg)
         
     }
     else if(String(message).includes("enter room,")){
         data=message.split(',');
 
         console.log("JOINING ROOM,"+data[1]+","+data[2])
-        var ans=conn_and_recv("join_room,"+data[1]+","+data[2])
-        console.log(ans)
-        sendResponse(ans)
+        latest_msg=conn_and_recv("join_room,"+data[1]+","+data[2])
+        console.log(latest_msg[0])
+        sendResponse(latest_msg)
+        console.log(latest_msg)
+        
     }
 
 
