@@ -17,7 +17,7 @@ var latest_msg
 
 //WHEN THE EXTENTION IS BEING INSTALLED
 chrome.runtime.onInstalled.addListener(async () => {
-
+    console.log("===========================================")
     //opens welcome page
     let url = chrome.runtime.getURL("htmls/hello.html");
     let tab = await chrome.tabs.create({ url });
@@ -49,17 +49,11 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
             chrome.action.setPopup({popup: 'htmls/dif_popup.html'});
         }
 
-        conn_and_recv("OnActivated: "+u)
+        //conn_and_recv("OnActivated: "+u)
     }); 
     
 
-    /*
-    chrome.tabs.get(activeInfo.tabId, function(tab){
-        u = tab.url;
-        console.log("OnActivated-you are here:"+u);
-        connection.send(u)
-    });
-    */
+
 });
 
 
@@ -67,27 +61,7 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
 chrome.tabs.onUpdated.addListener(async (tabId, change, tab) => {
 
 
-    /*
 
-    var connection = await new WebSocket('ws://localhost:8765'); //let
-    console.log("connection established")
-    connection.onopen = function(e) {
-    
-        //alert("[open] Connection established");
-        //alert("Sending to server");
-        //var url=chrome.runtime.getURL();//"html/popup.html
-
-        //checks if you changed current tab
-        if (tab.active && change.url) {
-            console.log("onUpdated-you are here:change "+change.url); 
-            console.log("onUpdated-your id is stiil:"+ id); 
-            connection.send(change.url)
-
-        }
-        
-        
-    };
-    */
 
     //checks if you changed current tab
     if (tab.active && change.url) {
@@ -104,7 +78,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, change, tab) => {
             console.log("set current tab to: "+ current_tab)
         }
 
-        conn_and_recv("onUpdated: "+change.url)
+        //conn_and_recv("onUpdated: "+change.url)
 
     }
 
@@ -130,13 +104,19 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
 
         console.log("JOINING ROOM,"+data[1]+","+data[2])
         latest_msg=conn_and_recv("join_room,"+data[1]+","+data[2])
+        console.log("1"+latest_msg)
+        console.log("2"+latest_msg.length)
+        console.log("3"+typeof latest_msg)
+        console.log("4"+ latest_msg)
+
+
         console.log(latest_msg[0])
         sendResponse(latest_msg)
         console.log(latest_msg)
         
     }
 
-
+    return true
 });
 
 
@@ -145,16 +125,53 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
 
 function conn_and_recv(msg){
     var connection = new WebSocket('ws://localhost:8765'); //let
-    let ans = []
+    var ans ="a"
     connection.onopen = function(e) {
         connection.send(msg)
-        connection.addEventListener('message', function (event) {
-            console.log('Message from server ', event.data);
-            ans[0] = event.data
-            //console.log("ansbefore"+ ans)
-        });
-        //console.log("after1:"+ans)
+        console.log("conn_and_recv 4: "+ans)
+        console.log("conn_and_recv 5: " + ans[0])
+    //console.log("after1:"+ans)
     };
+    connection.onmessage=function(event){
+        console.log("ttt")
+        console.log("onmessage: "+event.data)
+        id=event.data //need to wait until gets value
+    }
+    /*
+    connection.addEventListener('message', function (event) {
+        console.log('Message from server ', event.data);
+        ans=event.data
+        console.log("conn_and_recv 0: "+ans)
+        console.log("conn_and_recv 1: " + ans[0])
+        //connection.close()
+    });
+    */
     //console.log("ans"+ans)
+    console.log("conn_and_recv 10: "+ans)
+    console.log("conn_and_recv 11: " + ans[0])
+    return ans
+}
+
+
+function recv_only(connection, reference ){
+//    var connection = new WebSocket('ws://localhost:8765'); //let
+//    var ans ="a"
+    connection.onmessage=function(event){
+        console.log("ttt")
+        console.log("onmessage: "+event.data)
+        id=event.data
+    }
+    /*
+    connection.addEventListener('message', function (event) {
+        console.log('Message from server ', event.data);
+        ans=event.data
+        console.log("conn_and_recv 0: "+ans)
+        console.log("conn_and_recv 1: " + ans[0])
+        //connection.close()
+    });
+    */
+    //console.log("ans"+ans)
+    console.log("conn_and_recv 10: "+ans)
+    console.log("conn_and_recv 11: " + ans[0])
     return ans
 }
