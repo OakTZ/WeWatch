@@ -8,11 +8,16 @@
 //
 // See https://developer.chrome.com/docs/extensions/reference/events/ for additional details.  
 
-var id
-var current_tab
-var room_id
-var latest_msg
+var connection
 
+var id
+
+var room=["id","password"]
+
+var current_tab
+
+var latest_msg
+var buffer
 
 
 //WHEN THE EXTENTION IS BEING INSTALLED
@@ -20,11 +25,12 @@ chrome.runtime.onInstalled.addListener(async () => {
     console.log("===========================================")
     //opens welcome page
     let url = chrome.runtime.getURL("htmls/hello.html");
-    let tab = await chrome.tabs.create({ url });
-    console.log(`Created tab ${tab.id}`);
 
-    //recives id from server
-    id=conn_and_recv("get_id")
+    //let tab = await chrome.tabs.create({ url });
+    //console.log(`Created tab ${tab.id}`);
+
+    //connect to server and recive id 
+    connect()
 
 }
 )
@@ -38,7 +44,6 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
         console.log("OnActivated-you are here: "+u);
         if(String(u).includes("https://www.youtube.com/watch")){
 
-            console.log("YOUTUBE")
 
             chrome.action.setPopup({popup: 'htmls/watching_popup.html'});
             current_tab=u
@@ -49,7 +54,6 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
             chrome.action.setPopup({popup: 'htmls/dif_popup.html'});
         }
 
-        //conn_and_recv("OnActivated: "+u)
     }); 
     
 
@@ -75,10 +79,10 @@ chrome.tabs.onUpdated.addListener(async (tabId, change, tab) => {
             chrome.action.setPopup({popup: 'htmls/watching_popup.html'});
             current_tab=change.url
 
-            console.log("set current tab to: "+ current_tab)
+
         }
 
-        //conn_and_recv("onUpdated: "+change.url)
+
 
     }
 
@@ -92,86 +96,49 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
     
     if (message == 'create new watching room') {
 
-        console.log("create a watching room XDLOLXDLOL")
         sendResponse('got and delivered')
 
-        latest_msg=conn_and_recv("create_room,"+current_tab+","+id)
-        console.log(latest_msg)
+
+        connection.send("create_room,"+current_tab+","+id)
+        connection.onmessage=function(event){
+            var data=event.data;
+            data=data.split(',')
+            room[0]=data[0]
+            room[1]=data[1]
+            console.log(room)
+        }
+        
         
     }
     else if(String(message).includes("enter room,")){
-        data=message.split(',');
+        var data=message.split(',');
 
         console.log("JOINING ROOM,"+data[1]+","+data[2])
-        latest_msg=conn_and_recv("join_room,"+data[1]+","+data[2])
-        console.log("1"+latest_msg)
-        console.log("2"+latest_msg.length)
-        console.log("3"+typeof latest_msg)
-        console.log("4"+ latest_msg)
 
+        connection.send("join_room,"+data[1]+","+data[2])
+        connection.onmessage=function(event){
+            var data=event.data
+            sendResponse(data)
+        }
 
-        console.log(latest_msg[0])
-        sendResponse(latest_msg)
-        console.log(latest_msg)
         
     }
 
-    return true
+
 });
 
 
 
 //--------------------------DEFS--------------------------------
 
-function conn_and_recv(msg){
-    var connection = new WebSocket('ws://localhost:8765'); //let
-    var ans ="a"
+
+function connect(){
+    connection = new WebSocket('ws://localhost:8765');
     connection.onopen = function(e) {
-        connection.send(msg)
-        console.log("conn_and_recv 4: "+ans)
-        console.log("conn_and_recv 5: " + ans[0])
-    //console.log("after1:"+ans)
+        connection.send("get_id");
     };
     connection.onmessage=function(event){
-        console.log("ttt")
-        console.log("onmessage: "+event.data)
-        id=event.data //need to wait until gets value
+        id=event.data;
     }
-    /*
-    connection.addEventListener('message', function (event) {
-        console.log('Message from server ', event.data);
-        ans=event.data
-        console.log("conn_and_recv 0: "+ans)
-        console.log("conn_and_recv 1: " + ans[0])
-        //connection.close()
-    });
-    */
-    //console.log("ans"+ans)
-    console.log("conn_and_recv 10: "+ans)
-    console.log("conn_and_recv 11: " + ans[0])
-    return ans
-}
-
-
-function recv_only(connection, reference ){
-//    var connection = new WebSocket('ws://localhost:8765'); //let
-//    var ans ="a"
-    connection.onmessage=function(event){
-        console.log("ttt")
-        console.log("onmessage: "+event.data)
-        id=event.data
-    }
-    /*
-    connection.addEventListener('message', function (event) {
-        console.log('Message from server ', event.data);
-        ans=event.data
-        console.log("conn_and_recv 0: "+ans)
-        console.log("conn_and_recv 1: " + ans[0])
-        //connection.close()
-    });
-    */
-    //console.log("ans"+ans)
-    console.log("conn_and_recv 10: "+ans)
-    console.log("conn_and_recv 11: " + ans[0])
-    return ans
+    
 }

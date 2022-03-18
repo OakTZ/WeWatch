@@ -70,7 +70,7 @@ async def listen(websocket,path):
             url=data[1]
             soc_id=data[-1]
             room_id=create_new_room(soc_id,url)
-            await websocket.send("created a new room with ID: "+ room_id+" and with the password: "+rooms[room_id][0][0])
+            await websocket.send(room_id+","+rooms[room_id][0][0]) #id,password
         
         if ("join_room," in message):
             data=message.split(',')
@@ -86,8 +86,8 @@ async def listen(websocket,path):
 
 
         else:
-
-            print ("Received and echoing message: "+message)
+            pass
+            #print ("Received and echoing message: "+message)
         #await websocket.send(message)
 
 start_server = websockets.serve(listen, "0.0.0.0", 8765)

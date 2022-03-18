@@ -4,6 +4,7 @@
 
 window.onload=function(){
 
+    //CREATE ROOM
     if (document.getElementById("createRoom")){
         document.getElementById("createRoom").addEventListener("click",function(){
 
@@ -16,6 +17,7 @@ window.onload=function(){
         });
     } 
 
+    //ENTER ROOM
     if (document.getElementById("enterRoom")){
         document.getElementById("enterRoom").addEventListener("click",function(){
 
