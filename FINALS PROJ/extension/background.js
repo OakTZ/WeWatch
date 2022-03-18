@@ -16,8 +16,7 @@ var room=["id","password"]
 
 var current_tab
 
-var latest_msg
-var buffer
+
 
 
 //WHEN THE EXTENTION IS BEING INSTALLED
@@ -96,9 +95,6 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
     
     if (message == 'create new watching room') {
 
-        sendResponse('got and delivered')
-
-
         connection.send("create_room,"+current_tab+","+id)
         connection.onmessage=function(event){
             var data=event.data;
@@ -106,6 +102,7 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
             room[0]=data[0]
             room[1]=data[1]
             console.log(room)
+            chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
         }
         
         
@@ -113,12 +110,17 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
     else if(String(message).includes("enter room,")){
         var data=message.split(',');
 
-        console.log("JOINING ROOM,"+data[1]+","+data[2])
+        //console.log("JOINING ROOM,"+data[1]+","+data[2])
 
         connection.send("join_room,"+data[1]+","+data[2])
         connection.onmessage=function(event){
             var data=event.data
             sendResponse(data)
+            if(data=="True"){
+                room[0]=data[1]
+                room[1]=data[2]
+                chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
+            }
         }
 
         
