@@ -26,7 +26,6 @@ def create_new_room(soc_id,url):
     new_id=generate_comb(6,False,False,True,False)
     password=generate_comb(4,True,True,True,False)
     rooms[new_id]=([password,url],[soc_id])
-    print(rooms)
     return new_id
 
 def generate_comb(length,lowercase,uppercase,digits,symbols):
@@ -70,14 +69,18 @@ async def listen(websocket,path):
             url=data[1]
             soc_id=data[-1]
             room_id=create_new_room(soc_id,url)
+            print(rooms)
             await websocket.send(room_id+","+rooms[room_id][0][0]+","+rooms[room_id][0][1]) #id,password
         
         if ("join_room," in message):
             data=message.split(',')
             room_id=data[1]
             room_password=data[2]
+            soc_id=data[-1]
             try:
                 if (rooms[room_id][0][0]==room_password):
+                    rooms[room_id][1].append(soc_id)
+                    print(rooms)
                     await websocket.send(f"TRUE,{rooms[room_id][0][1]}")
                 else:
                     await websocket.send("FALSE")

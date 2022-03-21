@@ -118,6 +118,7 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
 
             in_room=true
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
+            sendResponse("^")
 
         }
         
@@ -128,20 +129,23 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
 
         //console.log("JOINING ROOM,"+data[1]+","+data[2])
 
-        connection.send("join_room,"+msg[1]+","+msg[2])
+        connection.send("join_room,"+msg[1]+","+msg[2]+","+id)
         connection.onmessage=function(event){
             var data=event.data
             data=data.split(',')
-            sendResponse(data[0])
-            if(data=="TRUE"){
+            if(data[0]=="TRUE"){
         
                 room[0]=msg[1]
                 room[1]=msg[2]
                 room[2]=data[1]
 
                 in_room=true
-                chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
+                //chrome.tabs
+                console.log("tried to replace")
+                sendResponse("TRUE,"+rooms[2])
+        
             }
+            
         }
    
     }
