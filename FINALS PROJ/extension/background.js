@@ -12,7 +12,8 @@ var connection
 
 var id
 
-var room=["id","password"]
+var room=["id","password","url"]
+var in_room=false
 
 var current_tab
 
@@ -25,7 +26,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     //opens welcome page
     let url = chrome.runtime.getURL("htmls/hello.html");
 
-    //let tab = await chrome.tabs.create({ url });
+    let tab = await chrome.tabs.create({ url });
     //console.log(`Created tab ${tab.id}`);
 
     //connect to server and recive id 
@@ -41,19 +42,25 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
     chrome.tabs.get(activeInfo.tabId, function(tab){
         u = tab.url;
         console.log("OnActivated-you are here: "+u);
-        if(String(u).includes("https://www.youtube.com/watch")){
+
+        if(u==room[2] && in_room){
+            chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
+        }
+        else if(String(u).includes("https://www.youtube.com/watch")){
 
 
             chrome.action.setPopup({popup: 'htmls/watching_popup.html'});
             current_tab=u
 
-            console.log("set current tab to: "+ current_tab)
+            //console.log("set current tab to: "+ current_tab)
         }
         else{
             chrome.action.setPopup({popup: 'htmls/dif_popup.html'});
         }
 
     }); 
+
+
     
 
 
@@ -71,14 +78,20 @@ chrome.tabs.onUpdated.addListener(async (tabId, change, tab) => {
         console.log("onUpdated-you are here:change "+change.url); 
         console.log("onUpdated-your id is stiil:"+ id); 
         
-        if(String(change.url).includes("https://www.youtube.com/watch")){
 
-            console.log("YOUTUBE")
+        if (String(change.url)==room[2] && in_room){
+            chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
+        }
+        else if(String(change.url).includes("https://www.youtube.com/watch")){
+
 
             chrome.action.setPopup({popup: 'htmls/watching_popup.html'});
             current_tab=change.url
 
 
+        }
+        else{
+            chrome.action.setPopup({popup: 'htmls/dif_popup.html'});
         }
 
 
@@ -101,31 +114,44 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
             data=data.split(',')
             room[0]=data[0]
             room[1]=data[1]
-            console.log(room)
+            room[2]=data[2]
+
+            in_room=true
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
+
         }
         
         
     }
     else if(String(message).includes("enter room,")){
-        var data=message.split(',');
+        var msg=message.split(',');
 
         //console.log("JOINING ROOM,"+data[1]+","+data[2])
 
-        connection.send("join_room,"+data[1]+","+data[2])
+        connection.send("join_room,"+msg[1]+","+msg[2])
         connection.onmessage=function(event){
             var data=event.data
-            sendResponse(data)
-            if(data=="True"){
-                room[0]=data[1]
-                room[1]=data[2]
+            data=data.split(',')
+            sendResponse(data[0])
+            if(data=="TRUE"){
+        
+                room[0]=msg[1]
+                room[1]=msg[2]
+                room[2]=data[1]
+
+                in_room=true
                 chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
             }
         }
+   
+    }
+    else if(message=="give room details"){
+        console.log("giving deatils")
+        sendResponse(room[0]+","+room[1])
 
-        
     }
 
+    return true; //stopping message port closing
 
 });
 

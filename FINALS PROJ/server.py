@@ -70,7 +70,7 @@ async def listen(websocket,path):
             url=data[1]
             soc_id=data[-1]
             room_id=create_new_room(soc_id,url)
-            await websocket.send(room_id+","+rooms[room_id][0][0]) #id,password
+            await websocket.send(room_id+","+rooms[room_id][0][0]+","+rooms[room_id][0][1]) #id,password
         
         if ("join_room," in message):
             data=message.split(',')
@@ -78,7 +78,7 @@ async def listen(websocket,path):
             room_password=data[2]
             try:
                 if (rooms[room_id][0][0]==room_password):
-                    await websocket.send("TRUE")
+                    await websocket.send(f"TRUE,{rooms[room_id][0][1]}")
                 else:
                     await websocket.send("FALSE")
             except:
