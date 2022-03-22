@@ -27,12 +27,8 @@ window.onload=function(){
             console.log(room_password)
             chrome.runtime.sendMessage("enter room,"+room_id+","+room_password, (response) => {
                 var data=response
-                data=data.split(',')
-                console.log("re "+response)
-                document.getElementById("didfind").innerHTML=response;
-                if(response[0]=="TRUE"){
-                    window.location.replace(response[1])
-                }
+                document.getElementById("didfind").innerHTML=data;
+                
 
             });
 
