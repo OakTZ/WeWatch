@@ -23,15 +23,18 @@ window.onload=function(){
             var room_id=document.getElementById("room_id").value;
             var room_password=document.getElementById("room_password").value;
             
-            console.log(room_id)
-            console.log(room_password)
+
+
             chrome.runtime.sendMessage("enter room,"+room_id+","+room_password, (response) => {
                 var data=response
-                document.getElementById("didfind").innerHTML=data;
-                
-
+                data=data.split(',')
+                console.log("re "+data)
+                document.getElementById("didfind").innerHTML=data[0];
+                if(data[0]=="TRUE"){
+                    console.log("d1 "+data[1])
+                    window.open(data[1])
+                }
             });
-
         });
     } 
 

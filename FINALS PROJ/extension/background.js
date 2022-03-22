@@ -133,7 +133,6 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
         connection.onmessage=function(event){
             var data=event.data
             data=data.split(',')
-            sendResponse(data[0])
             if(data[0]=="TRUE"){
         
                 room[0]=msg[1]
@@ -141,10 +140,14 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
                 room[2]=data[1]
 
                 in_room=true
-                //REDIRECT!!!!!!
+                console.log("eve data "+String(event.data))
+                sendResponse(String(event.data))
                 
 
                 
+            }
+            else{
+                sendResponse("FALSE INFO")
             }
             
             
