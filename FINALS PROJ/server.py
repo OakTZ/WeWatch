@@ -58,9 +58,8 @@ async def listen(websocket,path):
 
         if (message=="get_id"):
 
-            print("exe needs id")
+            #print("exe needs id")
             soc_id=(create_new_id(websocket))
-            print(soc_id)
             await websocket.send(soc_id)
 
         if ("create_room," in message):
@@ -80,14 +79,26 @@ async def listen(websocket,path):
             try:
                 if (rooms[room_id][0][0]==room_password):
                     rooms[room_id][1].append(soc_id)
-                    print(rooms)
+                    #print(rooms)
                     await websocket.send(f"TRUE,{rooms[room_id][0][1]}")
                 else:
                     await websocket.send("FALSE")
             except:
                 await websocket.send("FALSE")
 
+        if ("exit_room" in message):
 
+            data=message.split(',')
+            room_id=data[1]
+            soc_id=data[-1]
+
+            rooms[room_id][1].remove(soc_id)
+
+            #checks if room is empty
+            if not (rooms[room_id][1]):
+                #delete room
+                del rooms[room_id]
+            
         else:
             pass
             #print ("Received and echoing message: "+message)

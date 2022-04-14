@@ -1,43 +1,16 @@
-//console.log("content@#@$#@%$#@%");
+
+//content.js
+//When a youtube.com/watch... opens
+
+document.addEventListener('yt-navigate-start',process);
+
+//checks if webpgae has been loaded and runs the process
+if (document.body) process();
+else document.addEventListener('DOMContentLoaded',process)
 
 
 
-window.onload=function(){
 
-    //CREATE ROOM
-    if (document.getElementById("createRoom")){
-        document.getElementById("createRoom").addEventListener("click",function(){
-
-            chrome.runtime.sendMessage("create new watching room", (response) => {
-                
-                window.close()
-            });
-
-        });
-    } 
-
-    //ENTER ROOM
-    if (document.getElementById("enterRoom")){
-        document.getElementById("enterRoom").addEventListener("click",function(){
-
-            var room_id=document.getElementById("room_id").value;
-            var room_password=document.getElementById("room_password").value;
-            
-
-
-            chrome.runtime.sendMessage("enter room,"+room_id+","+room_password, (response) => {
-                var data=response
-                data=data.split(',')
-                console.log("re "+data)
-                document.getElementById("didfind").innerHTML=data[0];
-                if(data[0]=="TRUE"){
-                    console.log("d1 "+data[1])
-                    window.open(data[1])
-                }
-            });
-        });
-    } 
-
+function process(){
     
-
 }

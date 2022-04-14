@@ -12,7 +12,7 @@ var connection
 
 var id
 
-var room=["id","password","url"]
+var room=["id","password","url","tabid"]
 var in_room=false
 
 var current_tab
@@ -22,12 +22,10 @@ var current_tab
 
 //WHEN THE EXTENTION IS BEING INSTALLED
 chrome.runtime.onInstalled.addListener(async () => {
-    console.log("===========================================")
     //opens welcome page
     let url = chrome.runtime.getURL("htmls/hello.html");
 
     let tab = await chrome.tabs.create({ url });
-    //console.log(`Created tab ${tab.id}`);
 
     //connect to server and recive id 
     connect()
@@ -41,7 +39,7 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
     //checks current tab and update the popup accordingly
     chrome.tabs.get(activeInfo.tabId, function(tab){
         u = tab.url;
-        console.log("OnActivated-you are here: "+u);
+        //console.log("OnActivated-you are here: "+u);
 
         if(u==room[2] && in_room){
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
@@ -75,10 +73,8 @@ chrome.tabs.onUpdated.addListener(async (tabId, change, tab) => {
 
     //checks if you changed current tab
     if (tab.active && change.url) {
-        console.log("onUpdated-you are here:change "+change.url); 
-        console.log("onUpdated-your id is stiil:"+ id); 
+        //console.log("onUpdated-you are here:change "+change.url); 
         
-
         if (String(change.url)==room[2] && in_room){
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
         }
@@ -100,12 +96,32 @@ chrome.tabs.onUpdated.addListener(async (tabId, change, tab) => {
 
 
 });
-  
+
+//WHEN CLOSING A TAB
+chrome.tabs.onRemoved.addListener (async(tabId) => {
+
+    if (in_room){
+        if (current_tab==room[2]){
+            console.log("user went out of watching room")
+
+            connection.send("exit_room,"+room[0]+","+id)
+
+            in_room=false
+            room=["id","password","url"]
+        }
+
+        
+    }
+
+});
+
+
+
 
 //LISTEN TO MESSAGE OVER CONTENT SCRIPT
 chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
 
-    
+    //create new watching room
     if (message == 'create new watching room') {
 
         connection.send("create_room,"+current_tab+","+id)
@@ -124,6 +140,8 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
         
         
     }
+
+    //enters room
     else if(String(message).includes("enter room,")){
         var msg=message.split(',');
 
@@ -140,7 +158,7 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
                 room[2]=data[1]
 
                 in_room=true
-                console.log("eve data "+String(event.data))
+                //console.log("eve data "+String(event.data))
                 sendResponse(String(event.data))
                 
 
@@ -154,8 +172,9 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
         }
    
     }
+    //give popup room info
     else if(message=="give room details"){
-        console.log("giving deatils")
+        //console.log("giving deatils")
         sendResponse(room[0]+","+room[1])
 
     }

@@ -3,16 +3,17 @@
     "version": "1.0",
     "manifest_version": 3,
     "permissions": [ 
-      "tabs"
+      "tabs", "scripting","activeTab"
     ],
     "background": {
       "service_worker": "background.js"
       
+      
     },
     "content_scripts":[{
-      
-        "matches": ["<all_urls>"],
-        "js":["content.js","watching_room.js"]
+        "matches": ["*://*.youtube.com/*"],
+        "include_glob":["*watch*"],
+        "js":["content.js"]
       
     }],
     "action":{
@@ -24,6 +25,6 @@
       "default_popup": "htmls/dif_popup.html",
       "default_title": "WeWatch$"
     }
-    
+  
   }
   
