@@ -15,7 +15,7 @@ var id
 var room=["id","password","url","tabid"]
 var in_room=false
 
-var current_tab
+var current_tab=["url","id"]
 
 
 
@@ -38,23 +38,30 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
 
     //checks current tab and update the popup accordingly
     chrome.tabs.get(activeInfo.tabId, function(tab){
-        u = tab.url;
+        var u = tab.url;
         //console.log("OnActivated-you are here: "+u);
+
+        current_tab[0]=u;
+        current_tab[1]=tab
 
         if(u==room[2] && in_room){
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
+            room_process();
         }
         else if(String(u).includes("https://www.youtube.com/watch")){
 
 
             chrome.action.setPopup({popup: 'htmls/watching_popup.html'});
-            current_tab=u
 
+            current_tab[0]=u
+
+            room[3]=tab.id;
             //console.log("set current tab to: "+ current_tab)
         }
         else{
             chrome.action.setPopup({popup: 'htmls/dif_popup.html'});
         }
+
 
     }); 
 
@@ -74,15 +81,22 @@ chrome.tabs.onUpdated.addListener(async (tabId, change, tab) => {
     //checks if you changed current tab
     if (tab.active && change.url) {
         //console.log("onUpdated-you are here:change "+change.url); 
-        
+
+        current_tab[0]=change.url
+        current_tab[1]=tab
+
         if (String(change.url)==room[2] && in_room){
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
+            room_process();
         }
         else if(String(change.url).includes("https://www.youtube.com/watch")){
 
 
             chrome.action.setPopup({popup: 'htmls/watching_popup.html'});
-            current_tab=change.url
+
+            current_tab[0]=change.url
+
+            room[3]=tabId;
 
 
         }
@@ -101,13 +115,14 @@ chrome.tabs.onUpdated.addListener(async (tabId, change, tab) => {
 chrome.tabs.onRemoved.addListener (async(tabId) => {
 
     if (in_room){
-        if (current_tab==room[2]){
+        console.log("current tab: "+current_tab[0]+" room tab: "+room[2])
+        if (current_tab[0]==room[2]){
             console.log("user went out of watching room")
 
             connection.send("exit_room,"+room[0]+","+id)
 
             in_room=false
-            room=["id","password","url"]
+            room=["id","password","url","tabid"]
         }
 
         
@@ -124,17 +139,21 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
     //create new watching room
     if (message == 'create new watching room') {
 
-        connection.send("create_room,"+current_tab+","+id)
+        connection.send("create_room,"+current_tab[0]+","+id)
         connection.onmessage=function(event){
             var data=event.data;
             data=data.split(',')
             room[0]=data[0]
             room[1]=data[1]
             room[2]=data[2]
+            room[3]=current_tab[1]
 
             in_room=true
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
-            sendResponse("^")
+            sendResponse("^");
+
+            room_process();
+
 
         }
         
@@ -156,6 +175,7 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
                 room[0]=msg[1]
                 room[1]=msg[2]
                 room[2]=data[1]
+                room[3]=current_tab[1]
 
                 in_room=true
                 //console.log("eve data "+String(event.data))
@@ -179,6 +199,7 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
 
     }
 
+
     return true; //stopping message port closing
 
 });
@@ -197,4 +218,14 @@ function connect(){
         id=event.data;
     }
     
+}
+function room_process(){
+    
+    chrome.scriptng.executeScript(
+        {
+        target:{tabId: room[3]}, //room[3]=tabId
+        files:["content.js"],
+        }
+        
+    );
 }

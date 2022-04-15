@@ -79,7 +79,7 @@ async def listen(websocket,path):
             try:
                 if (rooms[room_id][0][0]==room_password):
                     rooms[room_id][1].append(soc_id)
-                    #print(rooms)
+                    print(rooms)
                     await websocket.send(f"TRUE,{rooms[room_id][0][1]}")
                 else:
                     await websocket.send("FALSE")
@@ -98,6 +98,7 @@ async def listen(websocket,path):
             if not (rooms[room_id][1]):
                 #delete room
                 del rooms[room_id]
+            print(rooms)
             
         else:
             pass

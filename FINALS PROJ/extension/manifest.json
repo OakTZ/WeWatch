@@ -10,12 +10,6 @@
       
       
     },
-    "content_scripts":[{
-        "matches": ["*://*.youtube.com/*"],
-        "include_glob":["*watch*"],
-        "js":["content.js"]
-      
-    }],
     "action":{
       "default_icon":{
         "16":"pics/logo.png",

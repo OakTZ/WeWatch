@@ -42,7 +42,9 @@ window.onload=function(){
             data=response.split(',');
             document.getElementById("room_id").innerHTML=data[0]
             document.getElementById("room_password").innerHTML=data[1]
+
         });
+    
 
     }
 
