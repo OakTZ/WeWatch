@@ -1,7 +1,6 @@
 
 //content.js
 //When a youtube.com/watch... opens
-alert("in content script")
 
 document.addEventListener('yt-navigate-start',process);
 
@@ -13,5 +12,5 @@ else document.addEventListener('DOMContentLoaded',process)
 
 
 function process(){
-    
+    alert("in content script")
 }

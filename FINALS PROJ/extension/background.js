@@ -42,11 +42,11 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
         //console.log("OnActivated-you are here: "+u);
 
         current_tab[0]=u;
-        current_tab[1]=tab
+        current_tab[1]=tab.id;
 
         if(u==room[2] && in_room){
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
-            room_process();
+            run_room_process();
         }
         else if(String(u).includes("https://www.youtube.com/watch")){
 
@@ -83,11 +83,11 @@ chrome.tabs.onUpdated.addListener(async (tabId, change, tab) => {
         //console.log("onUpdated-you are here:change "+change.url); 
 
         current_tab[0]=change.url
-        current_tab[1]=tab
+        current_tab[1]=change.id
 
         if (String(change.url)==room[2] && in_room){
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
-            room_process();
+            run_room_process();
         }
         else if(String(change.url).includes("https://www.youtube.com/watch")){
 
@@ -136,8 +136,16 @@ chrome.tabs.onRemoved.addListener (async(tabId) => {
 //LISTEN TO MESSAGE OVER CONTENT SCRIPT
 chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
 
+    //notify that the user in watching room
+    if(message=="in watching room"){
+        //give popup room info
+        sendResponse(room[0]+","+room[1])
+        
+
+    }
+
     //create new watching room
-    if (message == 'create new watching room') {
+    else if (message == 'create new watching room') {
 
         connection.send("create_room,"+current_tab[0]+","+id)
         connection.onmessage=function(event){
@@ -152,7 +160,7 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
             sendResponse("^");
 
-            room_process();
+            run_room_process();
 
 
         }
@@ -181,7 +189,6 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
                 //console.log("eve data "+String(event.data))
                 sendResponse(String(event.data))
                 
-
                 
             }
             else{
@@ -191,12 +198,6 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
             
         }
    
-    }
-    //give popup room info
-    else if(message=="give room details"){
-        //console.log("giving deatils")
-        sendResponse(room[0]+","+room[1])
-
     }
 
 
@@ -219,11 +220,12 @@ function connect(){
     }
     
 }
-function room_process(){
-    
-    chrome.scriptng.executeScript(
+
+function run_room_process(){
+    const tabId=parseInt(current_tab[1]);
+    chrome.scripting.executeScript(
         {
-        target:{tabId: room[3]}, //room[3]=tabId
+        target:{tabId: tabId}, 
         files:["content.js"],
         }
         
