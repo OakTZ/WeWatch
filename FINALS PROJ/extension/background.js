@@ -193,7 +193,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
             sendResponse("^");
 
-            //run_room_process();
+            run_room_process();
 
 
         }
