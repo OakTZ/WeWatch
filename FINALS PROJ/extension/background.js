@@ -33,7 +33,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 }
 )
 
-//ON ACTIVATED TAB INB CHROME
+//WHEN THE ACTIVE TAB CHANGES CHROME
 chrome.tabs.onActivated.addListener( function(activeInfo){
 
     //checks current tab and update the popup accordingly
@@ -45,17 +45,19 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
         current_tab[1]=tab.id;
 
         if(u==room[2] && in_room){
+
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
+            room[3]=tab.id;
+
+            console.log("onActivated did it")
             run_room_process();
         }
         else if(String(u).includes("https://www.youtube.com/watch")){
 
 
             chrome.action.setPopup({popup: 'htmls/watching_popup.html'});
-
             current_tab[0]=u
 
-            room[3]=tab.id;
             //console.log("set current tab to: "+ current_tab)
         }
         else{
@@ -72,21 +74,20 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
 });
 
 
-//WHEN OPENING A NEW TAB IN CHROME
-chrome.tabs.onUpdated.addListener(async (tabId, change, tab) => {
+//WHEN THE TAB IS UPDATED
+chrome.tabs.onUpdated.addListener(function (tabId, change, tab) {
 
-
-
-
-    //checks if you changed current tab
+    //checks if you changed current tab - change is the object of things that have changes and does not have id!!
+    console.log("change.url: "+ change.url)
     if (tab.active && change.url) {
-        //console.log("onUpdated-you are here:change "+change.url); 
-
         current_tab[0]=change.url
-        current_tab[1]=change.id
+        current_tab[1]=tab.id
 
         if (String(change.url)==room[2] && in_room){
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
+            room[3]=tab.id;
+
+            console.log("onUpdated did it, room[3]: "+room[3])
             run_room_process();
         }
         else if(String(change.url).includes("https://www.youtube.com/watch")){
@@ -96,7 +97,6 @@ chrome.tabs.onUpdated.addListener(async (tabId, change, tab) => {
 
             current_tab[0]=change.url
 
-            room[3]=tabId;
 
 
         }
@@ -111,8 +111,41 @@ chrome.tabs.onUpdated.addListener(async (tabId, change, tab) => {
 
 });
 
+
+/*
+//WHEN OPENING A NEW TAB 
+chrome.tabs.onCreated.addListener(function(tab){
+
+    current_tab[0]=tab.pendingUrl //becuase the file hasnt fully loaded tab.url=NaN
+    current_tab[1]=tab.id
+    
+    console.log("O.C "+tab.pendingUrl+" and room "+room[2])
+
+    if (String(tab.pendingUrl)==room[2] && in_room){
+        chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
+        room[3]=tab.id;
+        console.log("in on created +room: "+room[3])
+
+        console.log("onCreated did it")
+        run_room_process();
+    }
+    else if(String(tab.url).includes("https://www.youtube.com/watch")){
+
+
+        chrome.action.setPopup({popup: 'htmls/watching_popup.html'});
+
+        current_tab[0]=tab.url
+
+
+    }
+    else{
+        chrome.action.setPopup({popup: 'htmls/dif_popup.html'});
+    }
+});
+*/
+
 //WHEN CLOSING A TAB
-chrome.tabs.onRemoved.addListener (async(tabId) => {
+chrome.tabs.onRemoved.addListener (function(tabId) {
 
     if (in_room){
         console.log("current tab: "+current_tab[0]+" room tab: "+room[2])
@@ -134,7 +167,7 @@ chrome.tabs.onRemoved.addListener (async(tabId) => {
 
 
 //LISTEN TO MESSAGE OVER CONTENT SCRIPT
-chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
+chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
     //notify that the user in watching room
     if(message=="in watching room"){
@@ -160,7 +193,7 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
             sendResponse("^");
 
-            run_room_process();
+            //run_room_process();
 
 
         }
@@ -183,12 +216,10 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=> {
                 room[0]=msg[1]
                 room[1]=msg[2]
                 room[2]=data[1]
-                room[3]=current_tab[1]
 
                 in_room=true
                 //console.log("eve data "+String(event.data))
                 sendResponse(String(event.data))
-                
                 
             }
             else{
@@ -222,7 +253,8 @@ function connect(){
 }
 
 function run_room_process(){
-    const tabId=parseInt(current_tab[1]);
+    console.log(room[3])
+    const tabId=parseInt(room[3]);
     chrome.scripting.executeScript(
         {
         target:{tabId: tabId}, 

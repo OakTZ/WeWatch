@@ -3,7 +3,14 @@
     "version": "1.0",
     "manifest_version": 3,
     "permissions": [ 
-      "tabs", "scripting","activeTab"
+      "tabs",
+      "scripting",
+      "activeTab"
+    
+    ],
+    "host_permissions": [
+      "*://www.youtube.com/*"
+      
     ],
     "background": {
       "service_worker": "background.js"
