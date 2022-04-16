@@ -14,6 +14,15 @@ else document.addEventListener('DOMContentLoaded',process)
 
 function process(){
     video = document.querySelector('video');
+    chrome.runtime.sendMessage("watching room, ", (response) => {
+        //respnse        
+        
+    });
+    while (true){
+        
+    }
+
+    
     video.pause();
     alert("yt-navigate-finish")
 }
