@@ -262,10 +262,17 @@ function run_room_process(){
         }
         
     );
+    /*
     var port=chrome.runtime.connect({name: "room_coms"});
-        port.postMessage({q:"W?"});
-        port.onMessage.addListener(function(msg){
-            if(msg.a=="W")
-            console.log("WWWWWWWWWWWWWWWWWWWWWWWWW")
+    port.postMessage({q:"W?"});
+    port.onMessage.addListener(function(msg){
+        if(msg.a=="W")
+        console.log("WWWWWWWWWWWWWWWWWWWWWWWWW")
+    })
+    */
+   chrome.tabs.query({active:true},function(tabs){
+        chrome.tabs.sendMessage(tabs[0].id,{a:"W?"},function(response){
+            console.log(response)
         })
+   });
 }

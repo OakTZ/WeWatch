@@ -3,6 +3,7 @@ import websockets
 import asyncio
 import string
 import random
+import time
 
 #SETTING UP VARIABLES AND FUNCTIONS#
 
@@ -47,7 +48,10 @@ def generate_comb(length,lowercase,uppercase,digits,symbols):
             used_combs.append(comb)
             return comb
     
-
+#returns time since Unix Epoch in 1.1.1970 - UTC  
+def running_milisecs():
+    delay=10
+    return (int(round(time.time() * 1000)+delay)) #rounding to ms
 
 #MAIN CODE#
 

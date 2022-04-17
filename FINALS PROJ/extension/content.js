@@ -15,16 +15,9 @@ else document.addEventListener('DOMContentLoaded',process)
 function process(){
     video = document.querySelector('video');
     video.pause();
-    
-    chrome.runtime.onConnect.addListener(function(port){
-        console.assert(port.name=="room_coms");
-        port.onMessage.addListener(function(msg){
-            if(msg.q=="W?"){
-                port.postMessage({a:"W"})
-            }
 
-        })
-
+    chrome.runtime.onMessage.addListener(function(request,sender,sendResponce){
+        sendResponce("WWWWWWWWWWWWWWWWWW")
     })
 }
 
