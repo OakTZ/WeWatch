@@ -7,7 +7,7 @@ window.onload=function(){
 
             chrome.runtime.sendMessage("create new watching room", (response) => {
                 
-                window.close()
+                window.close();
             });
 
         });
@@ -23,13 +23,13 @@ window.onload=function(){
 
 
             chrome.runtime.sendMessage("enter room,"+room_id+","+room_password, (response) => {
-                var data=response
-                data=data.split(',')
-                console.log("re "+data)
+                var data=response;
+                data=data.split(',');
+                console.log("re "+data);
                 document.getElementById("didfind").innerHTML=data[0];
                 if(data[0]=="TRUE"){
-                    console.log("d1 "+data[1])
-                    window.open(data[1])
+                    console.log("d1 "+data[1]);
+                    window.open(data[1]);
                 }
             });
         });

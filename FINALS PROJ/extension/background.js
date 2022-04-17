@@ -28,7 +28,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     let tab = await chrome.tabs.create({ url });
 
     //connect to server and recive id 
-    connect()
+    connect();
 
 }
 )
@@ -49,14 +49,14 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
             room[3]=tab.id;
 
-            console.log("onActivated did it")
+            console.log("onActivated did it");
             run_room_process();
         }
         else if(String(u).includes("https://www.youtube.com/watch")){
 
 
             chrome.action.setPopup({popup: 'htmls/watching_popup.html'});
-            current_tab[0]=u
+            current_tab[0]=u;
 
             //console.log("set current tab to: "+ current_tab)
         }
@@ -80,8 +80,8 @@ chrome.tabs.onUpdated.addListener(function (tabId, change, tab) {
     //checks if you changed current tab - change is the object of things that have changes and does not have id!!
     console.log("change.url: "+ change.url)
     if (tab.active && change.url) {
-        current_tab[0]=change.url
-        current_tab[1]=tab.id
+        current_tab[0]=change.url;
+        current_tab[1]=tab.id;
 
         if (String(change.url)==room[2] && in_room){
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
@@ -95,7 +95,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, change, tab) {
 
             chrome.action.setPopup({popup: 'htmls/watching_popup.html'});
 
-            current_tab[0]=change.url
+            current_tab[0]=change.url;
 
 
 
@@ -150,12 +150,12 @@ chrome.tabs.onRemoved.addListener (function(tabId) {
     if (in_room){
         console.log("current tab: "+current_tab[0]+" room tab: "+room[2])
         if (current_tab[0]==room[2]){
-            console.log("user went out of watching room")
+            console.log("user went out of watching room");
 
-            connection.send("exit_room,"+room[0]+","+id)
+            connection.send("exit_room,"+room[0]+","+id);
 
-            in_room=false
-            room=["id","password","url","tabid"]
+            in_room=false;
+            room=["id","password","url","tabid"];
         }
 
         
@@ -172,7 +172,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
     //notify that the user in watching room
     if(message=="in watching room"){
         //give popup room info
-        sendResponse(room[0]+","+room[1])
+        sendResponse(room[0]+","+room[1]);
         
 
     }
@@ -180,16 +180,16 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
     //create new watching room
     else if (message == 'create new watching room') {
 
-        connection.send("create_room,"+current_tab[0]+","+id)
+        connection.send("create_room,"+current_tab[0]+","+id);
         connection.onmessage=function(event){
             var data=event.data;
-            data=data.split(',')
-            room[0]=data[0]
-            room[1]=data[1]
-            room[2]=data[2]
-            room[3]=current_tab[1]
+            data=data.split(',');
+            room[0]=data[0];
+            room[1]=data[1];
+            room[2]=data[2];
+            room[3]=current_tab[1];
 
-            in_room=true
+            in_room=true;
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
             sendResponse("^");
 
@@ -207,23 +207,23 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
         //console.log("JOINING ROOM,"+data[1]+","+data[2])
 
-        connection.send("join_room,"+msg[1]+","+msg[2]+","+id)
+        connection.send("join_room,"+msg[1]+","+msg[2]+","+id);
         connection.onmessage=function(event){
-            var data=event.data
-            data=data.split(',')
+            var data=event.data;
+            data=data.split(',');
             if(data[0]=="TRUE"){
         
-                room[0]=msg[1]
-                room[1]=msg[2]
-                room[2]=data[1]
+                room[0]=msg[1];
+                room[1]=msg[2];
+                room[2]=data[1];
 
-                in_room=true
+                in_room=true;
                 //console.log("eve data "+String(event.data))
-                sendResponse(String(event.data))
+                sendResponse(String(event.data));
                 
             }
             else{
-                sendResponse("FALSE INFO")
+                sendResponse("FALSE INFO");
             }
             
             
