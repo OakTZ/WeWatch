@@ -1,5 +1,6 @@
-var video
-//var commands={'play':video.play(),'pause':video.pause()} //could be function(){video.pause()}
+
+//content.js
+//When a youtube.com/watch... opens
 
 //when youtube first loading - waits until the video element has loaded
 document.addEventListener('yt-navigate-finish',process);
@@ -14,28 +15,35 @@ else document.addEventListener('DOMContentLoaded',process)
 function process(){
     video = document.querySelector('video');
     video.pause();
-    //need to implement some sort of being ready...
-    while (true){
-        //listen on port...
-        //run commands
-        //send current time
-    }
-
     
+    chrome.runtime.onConnect.addListener(function(port){
+        console.assert(port.name=="room_coms");
+        port.onMessage.addListener(function(msg){
+            if(msg.q=="W?"){
+                port.postMessage({a:"W"})
+            }
+
+        })
+
+    })
 }
+
+
+// *****HELPING FUNCTIONS*****
+
 
 //runs the command on spesific UTC time
 function run_command(msg){
-    data=msg.split(',')
-    const cmd=data[0]
-    const t_t_r=wait_time(data[1])
-    setTimeout(commands(cmd),t_t_r)
+    data=msg.split(',');
+    const cmd=data[0];
+    const t_t_r=wait_time(data[1]);
+    setTimeout(commands(cmd),t_t_r);
 }
 
 
 function wait_time(e_time){
     const now=new Date().getTime(); //gets milisecs since Unix Epoch in 1.1.1970 - UTC
-    return (parseInt(e_time)-now)
+    return (parseInt(e_time)-now);
 }
 
 function commands(cmd){
@@ -47,9 +55,8 @@ function commands(cmd){
     }
     else if (String(cmd).includes("move to time")){
         cmd=cmd.split(":")
-        const t=parseInt(cmd[1])
+        const t=parseInt(cmd[1]);
         video.pause();
         video.currentTime=t;
     }
 }
-
