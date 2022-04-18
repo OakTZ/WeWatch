@@ -15,6 +15,8 @@ var id
 var room=["id","password","url","tabid"]
 var in_room=false
 
+var room_process=[false,"intervelId"]
+
 var current_tab=["url","id"]
 
 
@@ -44,7 +46,7 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
         current_tab[0]=u;
         current_tab[1]=tab.id;
 
-        if(u==room[2] && in_room){
+        if(u==room[2] && in_room && current_tab[1]==room[3]){
 
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
             room[3]=tab.id;
@@ -83,7 +85,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, change, tab) {
         current_tab[0]=change.url
         current_tab[1]=tab.id
 
-        if (String(change.url)==room[2] && in_room){
+        if (String(change.url)==room[2] && in_room && current_tab[1]==room[3]){
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
             room[3]=tab.id;
 
@@ -151,6 +153,7 @@ chrome.tabs.onRemoved.addListener (function(tabId) {
         console.log("current tab: "+current_tab[0]+" room tab: "+room[2])
         if (current_tab[0]==room[2]){
             console.log("user went out of watching room")
+            room_process[0]=false;
 
             connection.send("exit_room,"+room[0]+","+id)
 
@@ -253,26 +256,36 @@ function connect(){
 }
 
 function run_room_process(){
-    console.log(room[3])
-    const tabId=parseInt(room[3]);
-    chrome.scripting.executeScript(
-        {
-        target:{tabId: tabId}, 
-        files:["content.js"],
-        }
-        
-    );
-    /*
-    var port=chrome.runtime.connect({name: "room_coms"});
-    port.postMessage({q:"W?"});
-    port.onMessage.addListener(function(msg){
-        if(msg.a=="W")
-        console.log("WWWWWWWWWWWWWWWWWWWWWWWWW")
-    })
-    */
-   chrome.tabs.query({active:true},function(tabs){
-        chrome.tabs.sendMessage(tabs[0].id,{a:"W?"},function(response){
+    if (room_process[0]==false){
+        room_process[0]=true;
+        const tabId=parseInt(room[3]);
+        chrome.scripting.executeScript(
+            {
+            target:{tabId: tabId}, 
+            files:["content.js"],
+            }
+            
+        );
+
+        room_process[1]=setInterval(send_contentJs,6000)
+    }
+    else{
+        console.log("nope")
+        return
+    }
+    
+
+}
+
+function send_contentJs(){
+    if (room_process[0]==false){
+        console.log("exiting msging")
+        clearInterval(room_process[1])
+    }
+    else{
+        chrome.tabs.sendMessage(room[3],{a:"W?"},function(response){
             console.log(response)
-        })
-   });
+        }) 
+    }     
+  
 }
