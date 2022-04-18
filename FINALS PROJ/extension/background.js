@@ -185,72 +185,90 @@ chrome.webNavigation.onCommitted.addListener(function(details) {
 //LISTEN TO MESSAGE OVER CONTENT SCRIPT
 chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
-    if(message=="CHANGE TL"){
-        console.log("CHANGE TL");
+    //in-room messages
+    if (message.split(',')[0]=="watching_room" && in_room){
+
+        data=message.split(',')
+
+        if(data[1]=="playing"){
+            console.log("PLAYING")
+        }
+
+        else if(data[1]=="paused"){
+            console.log("PAUSED")
+        }
+
+        else if (data[1]=="moved tl"){
+            console.log("MOVED TL")
+        }
     }
-    //notify that the user in watching room
-    else if(message=="in watching room"){
-        //give popup room info
-        sendResponse(room[0]+","+room[1])
-        
 
-    }
-
-    //create new watching room
-    else if (message == 'create new watching room') {
-
-        connection.send("create_room,"+current_tab[0]+","+id)
-        connection.onmessage=function(event){
-            var data=event.data;
-            data=data.split(',')
-            room[0]=data[0]
-            room[1]=data[1]
-            room[2]=data[2]
-            room[3]=current_tab[1]
-
-            in_room=true
-            chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
-            sendResponse("^");
-
-            run_room_process();
-
+    //everything else
+    else{
+    
+        //notify that the user in watching room
+        if(message=="in watching room"){
+            //give popup room info
+            sendResponse(room[0]+","+room[1])
+            
 
         }
-        
-        
-    }
 
-    //enters room
-    else if(String(message).includes("enter room,")){
-        var msg=message.split(',');
+        //create new watching room
+        else if (message == 'create new watching room') {
 
-        //console.log("JOINING ROOM,"+data[1]+","+data[2])
-
-        connection.send("join_room,"+msg[1]+","+msg[2]+","+id)
-        connection.onmessage=function(event){
-            var data=event.data
-            data=data.split(',')
-            if(data[0]=="TRUE"){
-        
-                room[0]=msg[1]
-                room[1]=msg[2]
-                room[2]=data[1]
+            connection.send("create_room,"+current_tab[0]+","+id)
+            connection.onmessage=function(event){
+                var data=event.data;
+                data=data.split(',')
+                room[0]=data[0]
+                room[1]=data[1]
+                room[2]=data[2]
+                room[3]=current_tab[1]
 
                 in_room=true
-                //console.log("eve data "+String(event.data))
-                sendResponse(String(event.data))
-                
-            }
-            else{
-                sendResponse("FALSE INFO")
+                chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
+                sendResponse("^");
+
+                run_room_process();
+
+
             }
             
             
         }
-   
+
+        //enters room
+        else if(String(message).includes("enter room,")){
+            var msg=message.split(',');
+
+            //console.log("JOINING ROOM,"+data[1]+","+data[2])
+
+            connection.send("join_room,"+msg[1]+","+msg[2]+","+id)
+            connection.onmessage=function(event){
+                var data=event.data
+                data=data.split(',')
+                if(data[0]=="TRUE"){
+            
+                    room[0]=msg[1]
+                    room[1]=msg[2]
+                    room[2]=data[1]
+
+                    in_room=true
+                    //console.log("eve data "+String(event.data))
+                    sendResponse(String(event.data))
+                    
+                }
+                else{
+                    sendResponse("FALSE INFO")
+                }
+                
+                
+            }
+    
+        }
+
     }
-
-
     return true; //stopping message port closing
 
 });

@@ -29,18 +29,23 @@ function process(){
     video.onplaying=function(){//if user pressed play
         current_state="playing";
         //letting know to server to play everyone in spesific timestamp
+        chrome.runtime.sendMessage("watching_room,playing", (response) => {
+                
+        });
     }
     video.onpause=function(){
         current_state="paused";
         //letting know to server to pause everyone in spesific timestamp
-
+        chrome.runtime.sendMessage("watching_room,paused", (response) => {
+                
+        });
     }
     video.ontimeupdate=function(){ 
 
         //if user changed timeline
         if (Math.abs(video.currentTime-timeline)>1){
             //pauseing vid ->letting know to server that time has changed->server plays in sync
-            chrome.runtime.sendMessage("CHANGE TL", (response) => {
+            chrome.runtime.sendMessage("watching_room,moved tl", (response) => {
                 
             });
         }
@@ -49,12 +54,12 @@ function process(){
     }
 
     //setInterval(listen,100)
-    //setInterval(check_for_ad,2000)
+    setInterval(check_for_ad,2000)
     
     
 
 }
-
+/*
 function listen(){
 
     if(video.paused==false && current_state!="playing"){
@@ -69,18 +74,27 @@ function listen(){
         });
     }
 
-    else if(current_state=="ad"){
+    
+    
+}
+*/
 
-    }
-    
-    
-}
+//AD BLOCKER
 function check_for_ad(){
-    if(timeline==video.currentTime){
-        current_state="ad";
+
+    var skipButton=document.getElementsByClassName("ytp-ad-skip-button");
+
+    //checking if skip button is present
+    if(skipButton!=undefined && skipButton.length>0){
+
+        console.log("AD DETECTED");
+        skipButton[0].click();
     }
-    timeline=video.currentTime;
 }
+
+
+
+
 // *****HELPING FUNCTIONS*****
 
 
