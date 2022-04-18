@@ -1,6 +1,9 @@
-
 //content.js
-//When a youtube.com/watch... opens
+
+var video
+var current_state
+
+var timeline
 
 //when youtube first loading - waits until the video element has loaded
 document.addEventListener('yt-navigate-finish',process);
@@ -15,20 +18,68 @@ else document.addEventListener('DOMContentLoaded',process)
 function process(){
     video = document.querySelector('video');
     video.pause();
-    
-    setInterval(listen,6000)
-    
+    current_state="paused";
+
+    chrome.runtime.onMessage.addListener(function(request,sender,sendResponce){
+        sendResponce("WWWWWWWWWWWWWWWWWW");
+    })
+
+    //EVENTS
+
+    video.onplaying=function(){//if user pressed play
+        current_state="playing";
+        //letting know to server to play everyone in spesific timestamp
+    }
+    video.onpause=function(){
+        current_state="paused";
+        //letting know to server to pause everyone in spesific timestamp
+
+    }
+    video.ontimeupdate=function(){ 
+
+        //if user changed timeline
+        if (Math.abs(video.currentTime-timeline)>1){
+            //pauseing vid ->letting know to server that time has changed->server plays in sync
+            chrome.runtime.sendMessage("CHANGE TL", (response) => {
+                
+            });
+        }
+        timeline=video.currentTime;
+
+    }
+
+    //setInterval(listen,100)
+    //setInterval(check_for_ad,2000)
     
     
 
 }
+
 function listen(){
+
+    if(video.paused==false && current_state!="playing"){
+        current_state="playing";
+
+    }
+
+    else if (video.paused == true && current_state!="paused"){
+        current_state="paused";
+        chrome.runtime.sendMessage("PAUSE", (response) => {
+                
+        });
+    }
+
+    else if(current_state=="ad"){
+
+    }
     
-    chrome.runtime.onMessage.addListener(function(request,sender,sendResponce){
-        console.log(request,sender,sendResponce)
-        sendResponce("WWWWWWWWWWWWWWWWWW")
-    })
     
+}
+function check_for_ad(){
+    if(timeline==video.currentTime){
+        current_state="ad";
+    }
+    timeline=video.currentTime;
 }
 // *****HELPING FUNCTIONS*****
 

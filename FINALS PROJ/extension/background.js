@@ -46,7 +46,7 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
         current_tab[0]=u;
         current_tab[1]=tab.id;
 
-        if(u==room[2] && in_room && current_tab[1]==room[3]){
+        if(u==room[2] && in_room && (current_tab[1]==room[3] || room[3]=="tabid")){
 
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
             room[3]=tab.id;
@@ -76,20 +76,20 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
 });
 
 
-//WHEN THE TAB IS UPDATED
+//WHEN THE TAB IS UPDATED -I NEED TO TAKE INTO ACCOUNT IF USER GOES BACKTAB I NEEED TO CHANGE ROOM TO FALSE!
 chrome.tabs.onUpdated.addListener(function (tabId, change, tab) {
-
-    //checks if you changed current tab - change is the object of things that have changes and does not have id!!
-    console.log("change.url: "+ change.url)
+    //console.log("UPDATE")
+    //checks if you changed current tab - change is the object of things that have changes and does not have id - id stays the same!!
+    //console.log("change.url: "+ change.url)
     if (tab.active && change.url) {
         current_tab[0]=change.url
         current_tab[1]=tab.id
 
-        if (String(change.url)==room[2] && in_room && current_tab[1]==room[3]){
+        if (String(change.url)==room[2] && in_room && (current_tab[1]==room[3] || room[3]=="tabid")){
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
             room[3]=tab.id;
 
-            console.log("onUpdated did it, room[3]: "+room[3])
+            //console.log("onUpdated did it, room[3]: "+room[3])
             run_room_process();
         }
         else if(String(change.url).includes("https://www.youtube.com/watch")){
@@ -150,7 +150,7 @@ chrome.tabs.onCreated.addListener(function(tab){
 chrome.tabs.onRemoved.addListener (function(tabId) {
 
     if (in_room){
-        console.log("current tab: "+current_tab[0]+" room tab: "+room[2])
+        //console.log("current tab: "+current_tab[0]+" room tab: "+room[2])
         if (current_tab[0]==room[2]){
             console.log("user went out of watching room")
             room_process[0]=false;
@@ -166,14 +166,30 @@ chrome.tabs.onRemoved.addListener (function(tabId) {
 
 });
 
+//WHEN NAVIGATION IS COMMITTED
+chrome.webNavigation.onCommitted.addListener(function(details) {
+
+    //if a room tab has been refreshed
+    if (["reload", "link", "typed", "generated"].includes(details.transitionType) && details.url==room[2] && details.tabId==room[3]){
+
+        //content.js rebot
+        clearInterval(room_process[1])
+        room_process[0]=false
+        run_room_process();
+        
+    }   
+});
 
 
 
 //LISTEN TO MESSAGE OVER CONTENT SCRIPT
 chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
+    if(message=="CHANGE TL"){
+        console.log("CHANGE TL");
+    }
     //notify that the user in watching room
-    if(message=="in watching room"){
+    else if(message=="in watching room"){
         //give popup room info
         sendResponse(room[0]+","+room[1])
         
@@ -278,6 +294,7 @@ function run_room_process(){
 }
 
 function send_contentJs(){
+    //if user exited room
     if (room_process[0]==false){
         console.log("exiting msging")
         clearInterval(room_process[1])

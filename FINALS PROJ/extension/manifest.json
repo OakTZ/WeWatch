@@ -5,7 +5,8 @@
     "permissions": [ 
       "tabs",
       "scripting",
-      "activeTab"
+      "activeTab",
+      "webNavigation"
     
     ],
     "host_permissions": [
