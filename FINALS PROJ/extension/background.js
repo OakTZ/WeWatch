@@ -192,14 +192,17 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
         if(data[1]=="playing"){
             console.log("PLAYING")
+            connection.send("w.r,"+room[1]+","+id+",play,"+data[2]); //0-w.r,1-room id,2-user id,3-command,4-vid tl
         }
 
         else if(data[1]=="paused"){
             console.log("PAUSED")
+            connection.send("w.r,"+room[1]+",u.id,"+id+",pause,"+data[2]);
         }
 
         else if (data[1]=="moved tl"){
             console.log("MOVED TL")
+            connection.send("w.r,"+room[1]+",u.id,"+id+",move tl,"+data[2]);
         }
     }
 
@@ -318,9 +321,16 @@ function send_contentJs(){
         clearInterval(room_process[1])
     }
     else{
-        chrome.tabs.sendMessage(room[3],{a:"W?"},function(response){
-            console.log(response)
-        }) 
+        connection.onmessage=function(event){
+            const msg=String(event.data);
+            if(msg.includes("w.r,")){
+                chrome.tabs.sendMessage(room[3],msg,function(response){ //{command:"W?"}
+                    console.log(response)
+                }) 
+            }
+            
+        }
+    
     }     
   
 }
