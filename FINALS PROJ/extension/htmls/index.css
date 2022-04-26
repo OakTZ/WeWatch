@@ -24,14 +24,6 @@ p{
     font-family: Arial, Helvetica, sans-serif;
     color: white;
     font-size: 15px;
-    margin: 10px;
-
-    
-    text-decoration-color: red;
-    text-decoration-line: underline;
-    text-decoration-style: double;
-    text-decoration-thickness: 2px;
-    padding: 10px;
 }
 
 input[type=text]{

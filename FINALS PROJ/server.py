@@ -56,8 +56,9 @@ def cmd_utc():
 def broadcast(msg):
     data=msg.split(',') #0-w.r,1-room id,2-user id,3-command,4-vid tl
     utc=cmd_utc()
-    for uId in (rooms[data[1][1]]):
-
+    for uId in (rooms[data[1]][1]):
+        print(uId)
+        print("soc: "+ids[uId])
         ids[uId].send(data[0],data[3],data[4],utc) #0-w.r,1-command,2-vid tl,3-UTC
 
 
@@ -70,7 +71,8 @@ async def listen(websocket,path):
     async for message in websocket:
 
         if ("w.r" in message):
-            broadcast(message) #maybe needs await
+            #broadcast(message) #maybe needs await
+            pass
             
 
         else:

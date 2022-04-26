@@ -12,7 +12,7 @@ var connection
 
 var id
 
-var room=["id","password","url","tabid"]
+var room=["id","password","url","tabid","ishost"]
 var in_room=false
 
 var room_process=[false,"intervelId"]
@@ -185,8 +185,8 @@ chrome.webNavigation.onCommitted.addListener(function(details) {
 //LISTEN TO MESSAGE OVER CONTENT SCRIPT
 chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
-    //in-room messages
-    if (message.split(',')[0]=="watching_room" && in_room){
+    //in-room commands (if user is host)
+    if (message.split(',')[0]=="watching_room" && in_room &&room[4]){
 
         data=message.split(',')
 
@@ -228,6 +228,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
                 room[1]=data[1]
                 room[2]=data[2]
                 room[3]=current_tab[1]
+                room[4]=true
 
                 in_room=true
                 chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
@@ -256,7 +257,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
                     room[0]=msg[1]
                     room[1]=msg[2]
                     room[2]=data[1]
-
+                    room[4]=false
                     in_room=true
                     //console.log("eve data "+String(event.data))
                     sendResponse(String(event.data))
@@ -289,6 +290,13 @@ function connect(){
     connection.onmessage=function(event){
         id=event.data;
     }
+
+    connection.onclose=function(){
+        //reastablish connection
+        //console.log("reastablishing connecxtions")
+        connection=null
+        setTimeout(connect,500)
+    }
     
 }
 
@@ -303,7 +311,8 @@ function run_room_process(){
             }
             
         );
-
+        //sending content script if user is host or not
+        setTimeout(notify_if_host,500)
         room_process[1]=setInterval(send_contentJs,6000)
     }
     else{
@@ -321,16 +330,26 @@ function send_contentJs(){
         clearInterval(room_process[1])
     }
     else{
-        connection.onmessage=function(event){
-            const msg=String(event.data);
-            if(msg.includes("w.r,")){
-                chrome.tabs.sendMessage(room[3],msg,function(response){ //{command:"W?"}
-                    console.log(response)
-                }) 
+        // if user not host
+        if(!room[4]){
+
+            connection.onmessage=function(event){
+                const msg=String(event.data);
+                if(msg.includes("w.r,")){
+                    chrome.tabs.sendMessage(room[3],msg,function(response){ //{command:"W?"}
+                        console.log(response)
+                    }) 
+                }
+                
             }
-            
         }
     
     }     
   
+}
+
+function notify_if_host(){
+    chrome.tabs.sendMessage(room[3],String(room[4]),function(response){ //{command:"W?"}
+        console.log("host, "+response)
+    }) 
 }

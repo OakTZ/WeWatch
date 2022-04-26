@@ -3,6 +3,7 @@
 var video
 var current_state
 
+var ishost
 
 var timeline
 
@@ -27,8 +28,11 @@ function process(){
     //ON MESSAGE FROM background.js
 
     chrome.runtime.onMessage.addListener(function(message,sender,sendResponce){
-        run_command(message);
-    })
+        //if(msg.includes("w.r,")){
+            //run_command(message);
+       // }
+        sendResponce(message)
+    });
 
     //EVENTS
 
