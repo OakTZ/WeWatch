@@ -1,7 +1,9 @@
 body{
     width: 250px;
-    height: 50px;
-    background-color:rgb(0, 0, 0);
+    height: 100px;
+    background-color:rgb(40, 44, 52);
+    border-radius: 20px;
+
 }
 
 
@@ -22,8 +24,14 @@ p{
     font-family: Arial, Helvetica, sans-serif;
     color: white;
     font-size: 15px;
+    margin: 10px;
 
-
+    
+    text-decoration-color: red;
+    text-decoration-line: underline;
+    text-decoration-style: double;
+    text-decoration-thickness: 2px;
+    padding: 10px;
 }
 
 input[type=text]{
@@ -38,7 +46,7 @@ input[type=text]{
     -webkit-transition: 0.5s;
     transition: 0.5s;
     outline: none;
-    background-color: black;
+    background-color: rgb(40, 44, 52);
     color: white;
     font-family: Arial, Helvetica, sans-serif;
     font-size: 15px;
@@ -61,8 +69,8 @@ input[type=button]{
     padding: 8px 16px;
     margin: 10px;
     text-align: center;
-
-
+    border-radius: 4px;
+    outline: none;
     
 }
 
