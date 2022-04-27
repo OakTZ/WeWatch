@@ -1,5 +1,8 @@
 //content.js
 
+
+//boolean to not lets
+
 var video
 var current_state
 
@@ -24,47 +27,86 @@ function process(){
     current_state="paused";
 
 
-
     //ON MESSAGE FROM background.js
 
     chrome.runtime.onMessage.addListener(function(message,sender,sendResponce){
-        //if(msg.includes("w.r,")){
-            //run_command(message);
-       // }
-        sendResponce(message)
+        console.log("msg",message);
+        if(message.includes("w.r,") && ishost==false){
+            console.log("WHAT>@")
+        }
+        else{
+            if(message=="true"){
+                console.log("t")
+                ishost=true
+            }
+            else if(message=="false"){
+                ishost=false
+            }
+        }
+
+
+        return true; //stopping message port closing
+
     });
+
+
+
+    //disable controls for non-host users
+    video.addEventListener('click',function(){
+        console.log("IN CLICK")
+        console.log(ishost)
+        if(!ishost){
+            if (video.paused){
+                video.play();
+            }
+            else{
+                video.pause();
+            }
+        }
+    });
+
 
     //EVENTS
 
     video.onplaying=function(){//if user pressed play
-        current_state="playing";
-        //letting know to server to play everyone in spesific timestamp
-        chrome.runtime.sendMessage("watching_room,playing,"+video.currentTime, (response) => {
-                
-        });
-    }
-    video.onpause=function(){
-        current_state="paused";
-        //letting know to server to pause everyone in spesific timestamp
-        chrome.runtime.sendMessage("watching_room,paused,"+video.currentTime, (response) => {
-                
-        });
-    }
-    video.ontimeupdate=function(){ 
-
-        //if user changed timeline
-        if (Math.abs(video.currentTime-timeline)>1){
-            //pauseing vid ->letting know to server that time has changed->server plays in sync
-            chrome.runtime.sendMessage("watching_room,moved tl,"+video.currentTime, (response) => {
-                
+        if (ishost){
+            current_state="playing";
+            //letting know to server to play everyone in spesific timestamp
+            chrome.runtime.sendMessage("watching_room,playing,"+video.currentTime, (response) => {
+                    
             });
         }
-        timeline=video.currentTime;
+    }
+    video.onpause=function(){
+        if (ishost){
+            current_state="paused";
+            //letting know to server to pause everyone in spesific timestamp
+            chrome.runtime.sendMessage("watching_room,paused,"+video.currentTime, (response) => {
+                    
+            });
+        }
+    }
+    video.ontimeupdate=function(){ 
+        if (ishost){
+            //if user changed timeline
+            if (Math.abs(video.currentTime-timeline)>1){
+                //pauseing vid ->letting know to server that time has changed->server plays in sync
+                chrome.runtime.sendMessage("watching_room,moved tl,"+video.currentTime, (response) => {
+                    
+                });
+            }
+            timeline=video.currentTime;
+        }
 
     }
+
 
     //setInterval(listen,100)
     setInterval(check_for_ad,500)
+
+    if(ishost==false){
+        setInterval(disablecontrol,5000);
+    }
      
 
 }
@@ -85,7 +127,15 @@ function check_for_ad(){
 }
 
 
+function disablecontrol(){
+    
+    var playButton=document.getElementsByClassName("ytp-play-button ytp-button")[0]
 
+    if(playButton!=undefined &&playButton.length>0){
+        playButton.remove();
+    }
+
+}
 
 // *****HELPING FUNCTIONS*****
 

@@ -170,14 +170,27 @@ chrome.tabs.onRemoved.addListener (function(tabId) {
 chrome.webNavigation.onCommitted.addListener(function(details) {
 
     //if a room tab has been refreshed
-    if (["reload", "link", "typed", "generated"].includes(details.transitionType) && details.url==room[2] && details.tabId==room[3]){
+    if (details.url==room[2] && details.tabId==room[3]){
 
-        //content.js rebot
-        clearInterval(room_process[1])
-        room_process[0]=false
-        run_room_process();
+        if(["reload", "link", "typed", "generated"].includes(details.transitionType)){ //NEED TO FIX -> JUST WHEN RELOADING YOU SHOULD REBOT
+            //content.js rebot
+            console.log("REBOTING")
+            clearInterval(room_process[1])
+            room_process[0]=false
+            run_room_process();
+        }
+        else{
+            console.log("user went out of watching room")
+            room_process[0]=false;
+
+            connection.send("exit_room,"+room[0]+","+id)
+
+            in_room=false
+            room=["id","password","url","tabid"]
+        }
         
     }   
+
 });
 
 
@@ -192,17 +205,17 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
         if(data[1]=="playing"){
             console.log("PLAYING")
-            connection.send("w.r,"+room[1]+","+id+",play,"+data[2]); //0-w.r,1-room id,2-user id,3-command,4-vid tl
+            connection.send("w.r,"+room[0]+","+id+",play,"+data[2]); //0-w.r,1-room id,2-user id,3-command,4-vid tl
         }
 
         else if(data[1]=="paused"){
             console.log("PAUSED")
-            connection.send("w.r,"+room[1]+",u.id,"+id+",pause,"+data[2]);
+            connection.send("w.r,"+room[0]+",u.id,"+id+",pause,"+data[2]);
         }
 
         else if (data[1]=="moved tl"){
             console.log("MOVED TL")
-            connection.send("w.r,"+room[1]+",u.id,"+id+",move tl,"+data[2]);
+            connection.send("w.r,"+room[0]+",u.id,"+id+",move tl,"+data[2]);
         }
     }
 
@@ -264,7 +277,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
                     
                 }
                 else{
-                    sendResponse("FALSE INFO")
+                    sendResponse("false id or password")
                 }
                 
                 
@@ -289,15 +302,13 @@ function connect(){
     };
     connection.onmessage=function(event){
         id=event.data;
-    }
+    };
+    setInterval(keep_alive,10000)
+       
+}
 
-    connection.onclose=function(){
-        //reastablish connection
-        //console.log("reastablishing connecxtions")
-        connection=null
-        setTimeout(connect,500)
-    }
-    
+function keep_alive(){
+    connection.send("k.a");
 }
 
 function run_room_process(){
@@ -312,8 +323,20 @@ function run_room_process(){
             
         );
         //sending content script if user is host or not
-        setTimeout(notify_if_host,500)
+        setTimeout(notify_if_host,1000)
         room_process[1]=setInterval(send_contentJs,6000)
+
+        connection.onmessage=function(event){
+            console.log("got msg!!!!!!!!!!!")
+            var msg=String(event.data);
+            console.log("msg: ",msg)
+            if(msg.includes("w.r,")){
+                chrome.tabs.sendMessage(room[3],msg,function(response){ //{command:"W?"}
+                    //console.log(response)
+                }) 
+            }
+            
+        }
     }
     else{
         console.log("nope")
@@ -330,26 +353,29 @@ function send_contentJs(){
         clearInterval(room_process[1])
     }
     else{
+        /*
         // if user not host
         if(!room[4]){
-
             connection.onmessage=function(event){
-                const msg=String(event.data);
+                console.log("got msg!!!!!!!!!!!")
+                var msg=String(event.data);
+                console.log("msg: ",msg)
                 if(msg.includes("w.r,")){
                     chrome.tabs.sendMessage(room[3],msg,function(response){ //{command:"W?"}
-                        console.log(response)
+                        //console.log(response)
                     }) 
                 }
                 
             }
         }
+        */
     
     }     
   
 }
 
 function notify_if_host(){
+    //console.log("N I H ",room[4])
     chrome.tabs.sendMessage(room[3],String(room[4]),function(response){ //{command:"W?"}
-        console.log("host, "+response)
     }) 
 }

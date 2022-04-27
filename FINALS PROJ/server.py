@@ -50,16 +50,18 @@ def generate_comb(length,lowercase,uppercase,digits,symbols):
     
 #returns time since Unix Epoch in 1.1.1970 - UTC  
 def cmd_utc():
-    delay=500
+    delay=1000
     return (int(round(time.time() * 1000)+delay)) #rounding to ms
 
-def broadcast(msg):
+async def broadcast(msg):
     data=msg.split(',') #0-w.r,1-room id,2-user id,3-command,4-vid tl
     utc=cmd_utc()
-    for uId in (rooms[data[1]][1]):
-        print(uId)
-        print("soc: "+ids[uId])
-        ids[uId].send(data[0],data[3],data[4],utc) #0-w.r,1-command,2-vid tl,3-UTC
+    try:
+        for uId in (rooms[data[1]][1]):
+            await ids[uId].send((str(data[0])+","+str(data[3])+","+str(data[4])+","+str(utc))) #0-w.r,1-command,2-vid tl,3-UTC
+    except Exception as e :
+        print(e)
+
 
 
 
@@ -71,15 +73,15 @@ async def listen(websocket,path):
     async for message in websocket:
 
         if ("w.r" in message):
-            #broadcast(message) #maybe needs await
-            pass
+            await broadcast(message) #maybe needs await
+            
             
 
         else:
 
             if (message=="get_id"):
 
-                #print("exe needs id")
+                print("NEW USER HAS JOINED")
                 soc_id=(create_new_id(websocket))
                 await websocket.send(soc_id)
 
