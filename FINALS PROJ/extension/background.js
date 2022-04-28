@@ -296,7 +296,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
 
 function connect(){
-    connection = new WebSocket('ws://localhost:8765');
+    connection = new WebSocket('ws://192.168.3.16:8765'); //'ws://localhost:8765'
     connection.onopen = function(e) {
         connection.send("get_id");
     };
