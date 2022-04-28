@@ -5,6 +5,8 @@ import string
 import random
 import time
 
+
+
 #SETTING UP VARIABLES AND FUNCTIONS#
 
 global ids
@@ -50,7 +52,7 @@ def generate_comb(length,lowercase,uppercase,digits,symbols):
     
 #returns time since Unix Epoch in 1.1.1970 - UTC  
 def cmd_utc():
-    delay=1000
+    delay=300
     return (int(round(time.time() * 1000)+delay)) #rounding to ms
 
 async def broadcast(msg):
@@ -67,66 +69,84 @@ async def broadcast(msg):
 
 #MAIN CODE#
 
+
 async def listen(websocket,path):
     global rooms
+    try:
+        async for message in websocket:
 
-    async for message in websocket:
-
-        if ("w.r" in message):
-            await broadcast(message) #maybe needs await
-            
-            
-
-        else:
-
-            if (message=="get_id"):
-
-                print("NEW USER HAS JOINED")
-                soc_id=(create_new_id(websocket))
-                await websocket.send(soc_id)
-
-            if ("create_room," in message):
-
-                data=message.split(',')
-                url=data[1]
-                soc_id=data[-1]
-                room_id=create_new_room(soc_id,url)
-                print(rooms)
-                await websocket.send(room_id+","+rooms[room_id][0][0]+","+rooms[room_id][0][1]) #id,password
-            
-            if ("join_room," in message):
-                data=message.split(',')
-                room_id=data[1]
-                room_password=data[2]
-                soc_id=data[-1]
-                try:
-                    if (rooms[room_id][0][0]==room_password):
-                        rooms[room_id][1].append(soc_id)
-                        print(rooms)
-                        await websocket.send(f"TRUE,{rooms[room_id][0][1]}")
-                    else:
-                        await websocket.send("FALSE")
-                except:
-                    await websocket.send("FALSE")
-
-            if ("exit_room" in message):
-
-                data=message.split(',')
-                room_id=data[1]
-                soc_id=data[-1]
-
-                rooms[room_id][1].remove(soc_id)
-
-                #checks if room is empty
-                if not (rooms[room_id][1]):
-                    #delete room
-                    del rooms[room_id]
-                print(rooms)
+            if ("w.r" in message):
+                await broadcast(message) #maybe needs await
                 
+                
+
             else:
-                pass
-                #print ("Received and echoing message: "+message)
-            #await websocket.send(message)
+
+                if (message=="get_id"):
+
+                    print("NEW USER HAS JOINED")
+                    soc_id=(create_new_id(websocket))
+                    await websocket.send(soc_id)
+
+                elif("reconnecting" in message):
+                    data=message.split(',')
+                    check_id=data[1]
+                    if check_id in ids:
+                        ids[check_id]=websocket
+                        await websocket.send("reconnected you by id")
+
+                    else:
+                        soc_id=(create_new_id(websocket))
+                        await websocket.send("new_id,"+soc_id)
+
+                        await websocket.send(soc_id)
+
+                if ("create_room," in message):
+
+                    data=message.split(',')
+                    url=data[1]
+                    soc_id=data[-1]
+                    room_id=create_new_room(soc_id,url)
+                    print(rooms)
+                    await websocket.send(room_id+","+rooms[room_id][0][0]+","+rooms[room_id][0][1]) #id,password
+                
+                if ("join_room," in message):
+                    data=message.split(',')
+                    room_id=data[1]
+                    room_password=data[2]
+                    soc_id=data[-1]
+                    try:
+                        if (rooms[room_id][0][0]==room_password):
+                            rooms[room_id][1].append(soc_id)
+                            print(rooms)
+                            await websocket.send(f"TRUE,{rooms[room_id][0][1]}")
+                        else:
+                            await websocket.send("FALSE")
+                    except:
+                        await websocket.send("FALSE")
+
+                if ("exit_room" in message):
+
+                    data=message.split(',')
+                    room_id=data[1]
+                    soc_id=data[-1]
+
+                    rooms[room_id][1].remove(soc_id)
+
+                    #checks if room is empty
+                    if not (rooms[room_id][1]):
+                        #delete room
+                        del rooms[room_id]
+                    print(rooms)
+                    
+                else:
+                    pass
+                    #print ("Received and echoing message: "+message)
+                #await websocket.send(message)
+
+    except websockets.exceptions.ConnectionClosed:
+        print("A CLIENT HAS DISSCONECTED")
+
 
 start_server = websockets.serve(listen, "0.0.0.0", 8765)
 

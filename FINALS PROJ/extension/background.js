@@ -155,6 +155,7 @@ chrome.tabs.onRemoved.addListener (function(tabId) {
             console.log("user went out of watching room")
             room_process[0]=false;
 
+            reconnent();
             connection.send("exit_room,"+room[0]+","+id)
 
             in_room=false
@@ -182,7 +183,8 @@ chrome.webNavigation.onCommitted.addListener(function(details) {
         else{
             console.log("user went out of watching room")
             room_process[0]=false;
-
+            
+            reconnent();
             connection.send("exit_room,"+room[0]+","+id)
 
             in_room=false
@@ -205,17 +207,23 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
         if(data[1]=="playing"){
             console.log("PLAYING")
+
+            reconnent();
             connection.send("w.r,"+room[0]+","+id+",play,"+data[2]); //0-w.r,1-room id,2-user id,3-command,4-vid tl
         }
 
         else if(data[1]=="paused"){
             console.log("PAUSED")
-            connection.send("w.r,"+room[0]+",u.id,"+id+",pause,"+data[2]);
+
+            reconnent();
+            connection.send("w.r,"+room[0]+","+id+",pause,"+data[2]);
         }
 
         else if (data[1]=="moved tl"){
             console.log("MOVED TL")
-            connection.send("w.r,"+room[0]+",u.id,"+id+",move tl,"+data[2]);
+
+            reconnent();
+            connection.send("w.r,"+room[0]+","+id+",move tl,"+data[2]);
         }
     }
 
@@ -233,7 +241,9 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
         //create new watching room
         else if (message == 'create new watching room') {
 
-            connection.send("create_room,"+current_tab[0]+","+id)
+            reconnent();
+            connection.send("create_room,"+current_tab[0]+","+id);
+
             connection.onmessage=function(event){
                 var data=event.data;
                 data=data.split(',')
@@ -260,8 +270,9 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
             var msg=message.split(',');
 
             //console.log("JOINING ROOM,"+data[1]+","+data[2])
-
+            reconnent();
             connection.send("join_room,"+msg[1]+","+msg[2]+","+id)
+
             connection.onmessage=function(event){
                 var data=event.data
                 data=data.split(',')
@@ -303,8 +314,50 @@ function connect(){
     connection.onmessage=function(event){
         id=event.data;
     };
-    setInterval(keep_alive,10000)
+    //setInterval(keep_alive,10000)
        
+}
+
+function reconnent(){
+
+    if (connection==null){
+        console.log("reconnecting!!")
+        connection = new WebSocket('ws://192.168.3.16:8765');
+        connection.onopen = function(e) {
+            connection.send("reconnecting,",id);
+        };
+        connection.onmessage=function(event){
+            if (String(event.data).includes("new id,")){
+                console.log("getting new id...")
+                id=(event.data.split(','))[1]
+            }
+            else{
+                console.log(event.data)
+            }
+
+        };
+    }
+    else if (connection.readyState != 1 ){
+        console.log("reconnecting!!")
+        connection = new WebSocket('ws://192.168.3.16:8765');
+        connection.onopen = function(e) {
+            connection.send("reconnecting,",id);
+        };
+        connection.onmessage=function(event){
+            if (String(event.data).includes("new id,")){
+                console.log("getting new id...")
+                id=(event.data.split(','))[1]
+            }
+            else{
+                console.log(event.data)
+            }
+
+        };
+    }
+    else{
+        console.log("connection is still open")
+    }
+
 }
 
 function keep_alive(){
@@ -327,12 +380,12 @@ function run_room_process(){
         room_process[1]=setInterval(send_contentJs,6000)
 
         connection.onmessage=function(event){
-            console.log("got msg!!!!!!!!!!!")
             var msg=String(event.data);
-            console.log("msg: ",msg)
+            console.log("got msg!!!!: ",msg)
             if(msg.includes("w.r,")){
+                console.log("sending content.js") //0-w.r,1-command,2-vid tl,3-UTC
                 chrome.tabs.sendMessage(room[3],msg,function(response){ //{command:"W?"}
-                    //console.log(response)
+                    
                 }) 
             }
             

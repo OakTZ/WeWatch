@@ -10,6 +10,9 @@ var ishost
 
 var timeline
 
+var server_order=false
+
+
 //when youtube first loading - waits until the video element has loaded
 document.addEventListener('yt-navigate-finish',process);
 
@@ -30,17 +33,19 @@ function process(){
     //ON MESSAGE FROM background.js
 
     chrome.runtime.onMessage.addListener(function(message,sender,sendResponce){
+
         console.log("msg",message);
-        if(message.includes("w.r,") && ishost==false){
-            console.log("WHAT>@")
+        if(message.includes("w.r,")){
+            console.log("cmd")
+            run_command(message);
         }
         else{
             if(message=="true"){
-                console.log("t")
-                ishost=true
+                console.log("t");
+                ishost=true;
             }
             else if(message=="false"){
-                ishost=false
+                ishost=false;
             }
         }
 
@@ -69,7 +74,7 @@ function process(){
     //EVENTS
 
     video.onplaying=function(){//if user pressed play
-        if (ishost){
+        if (ishost && server_order==false){
             current_state="playing";
             //letting know to server to play everyone in spesific timestamp
             chrome.runtime.sendMessage("watching_room,playing,"+video.currentTime, (response) => {
@@ -78,7 +83,7 @@ function process(){
         }
     }
     video.onpause=function(){
-        if (ishost){
+        if (ishost && server_order==false){
             current_state="paused";
             //letting know to server to pause everyone in spesific timestamp
             chrome.runtime.sendMessage("watching_room,paused,"+video.currentTime, (response) => {
@@ -87,7 +92,7 @@ function process(){
         }
     }
     video.ontimeupdate=function(){ 
-        if (ishost){
+        if (ishost && server_order==false){
             //if user changed timeline
             if (Math.abs(video.currentTime-timeline)>1){
                 //pauseing vid ->letting know to server that time has changed->server plays in sync
@@ -149,17 +154,40 @@ function run_command(msg){
     const t_t_r=wait_time(data[3]);
 
     video.currentTime=parseInt(data[2]);
+    server_order=true;
 
     if(cmd=="play"){
-        setTimeout(video.play(),t_t_r);
+        console.log("playing at: ",t_t_r)
+        setTimeout(function(){
+            video.play();
+            server_order=false;
+        },t_t_r);
     }
 
     else if(cmd=="pause"){
-        setTimeout(video.pause(),t_t_r);
+        console.log("pausing at: ",t_t_r)
+        setTimeout(function(){
+            video.pause();
+            server_order=false;
+        },t_t_r);
     }
 
     else if (cmd=="move tl"){
-        setTimeout(video.play(),t_t_r);
+        console.log("moving tl at: ",t_t_r)
+        if(video.paused==false){
+            setTimeout(function(){
+                video.currentTime=parseInt(data[2]);
+                video.play();
+                server_order=false;
+            },t_t_r);
+
+        }
+        else{
+            setTimeout(function(){
+                video.currentTime=parseInt(data[2]);
+                server_order=false;
+            },t_t_r);
+        }
     }
 }
 
