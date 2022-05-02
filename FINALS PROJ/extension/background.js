@@ -88,7 +88,6 @@ chrome.tabs.onUpdated.addListener(function (tabId, change, tab) {
         if (String(change.url)==room[2] && in_room && (current_tab[1]==room[3] || room[3]=="tabid")){
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
             room[3]=tab.id;
-
             //console.log("onUpdated did it, room[3]: "+room[3])
             run_room_process();
         }
@@ -152,8 +151,9 @@ chrome.tabs.onRemoved.addListener (function(tabId) {
     if (in_room){
         //console.log("current tab: "+current_tab[0]+" room tab: "+room[2])
         if (current_tab[0]==room[2]){
-            console.log("user went out of watching room")
+            console.log("OnRemoved - user went out of watching room")
             room_process[0]=false;
+
 
             reconnent();
             connection.send("exit_room,"+room[0]+","+id)
@@ -169,32 +169,41 @@ chrome.tabs.onRemoved.addListener (function(tabId) {
 
 //WHEN NAVIGATION IS COMMITTED
 chrome.webNavigation.onCommitted.addListener(function(details) {
-
+    
     //if a room tab has been refreshed
-    if (details.url==room[2] && details.tabId==room[3]){
-
-        if(["reload", "link", "typed", "generated"].includes(details.transitionType)){ //NEED TO FIX -> JUST WHEN RELOADING YOU SHOULD REBOT
-            //content.js rebot
-            console.log("REBOTING")
-            clearInterval(room_process[1])
-            room_process[0]=false
-            run_room_process();
-        }
-        else{
-            console.log("user went out of watching room")
-            room_process[0]=false;
-            
-            reconnent();
-            connection.send("exit_room,"+room[0]+","+id)
-
-            in_room=false
-            room=["id","password","url","tabid"]
-        }
+    if(["reload", "link", "typed", "generated"].includes(details.transitionType) && details.url==room[2] &&details.tabId==room[3]){ //NEED TO FIX -> JUST WHEN RELOADING YOU SHOULD REBOT
+        //content.js rebot
+        console.log("REBOTING")
+        clearInterval(room_process[1])
+        room_process[0]=false
+        run_room_process();
+    }
         
-    }   
+    
 
 });
 
+/*
+//WHEN A REDIRECT IS ABOUT TO BE EXECUTED
+chrome.webRequest.onBeforeRedirect.addListener(function(details){
+    console.log("onBeoreRedirect")
+    //if user went out of watching room
+    if(details.tabId==room[3] && details.documentUrl!=room[2]){
+
+        
+        console.log("user redirected out of watching room")
+        room_process[0]=false;
+
+        reconnent();
+        connection.send("exit_room,"+room[0]+","+id)
+
+        in_room=false
+        room=["id","password","url","tabid"]
+        
+
+    }
+});
+*/
 
 
 //LISTEN TO MESSAGE OVER CONTENT SCRIPT
@@ -219,11 +228,25 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
             connection.send("w.r,"+room[0]+","+id+",pause,"+data[2]);
         }
 
-        else if (data[1]=="moved tl"){
+        else if (data[1]=="move tl"){
             console.log("MOVED TL")
 
             reconnent();
             connection.send("w.r,"+room[0]+","+id+",move tl,"+data[2]);
+        }
+
+        else if (data[1]=="exited"){
+
+            console.log("User exited watching room - content script")
+
+            room_process[0]=false;
+
+            reconnent();
+            console.log("OnContentScript - user went out of watching room")
+            connection.send("exit_room,"+room[0]+","+id)
+
+            in_room=false
+            room=["id","password","url","tabid"]
         }
     }
 
@@ -239,7 +262,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
         }
 
         //create new watching room
-        else if (message == 'create new watching room') {
+        else if (message == 'create new watching room') { //need to exit old one when created new one
 
             reconnent();
             connection.send("create_room,"+current_tab[0]+","+id);
@@ -266,7 +289,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
         }
 
         //enters room
-        else if(String(message).includes("enter room,")){
+        else if(String(message).includes("enter room,")){ //need to exit old one when created new one
             var msg=message.split(',');
 
             //console.log("JOINING ROOM,"+data[1]+","+data[2])
@@ -313,18 +336,21 @@ function connect(){
     };
     connection.onmessage=function(event){
         id=event.data;
+        console.log("connection: ",id)
     };
     //setInterval(keep_alive,10000)
        
 }
 
 function reconnent(){
-
+    console.log(id)
     if (connection==null){
         console.log("reconnecting!!")
         connection = new WebSocket('ws://192.168.3.16:8765');
+        console.log("r1: ",id)
         connection.onopen = function(e) {
-            connection.send("reconnecting,",id);
+            console.log("r2: ",id)
+            connection.send("reconnecting,"+id);
         };
         connection.onmessage=function(event){
             if (String(event.data).includes("new id,")){
@@ -340,8 +366,10 @@ function reconnent(){
     else if (connection.readyState != 1 ){
         console.log("reconnecting!!")
         connection = new WebSocket('ws://192.168.3.16:8765');
+        console.log("r1: ",id)
         connection.onopen = function(e) {
-            connection.send("reconnecting,",id);
+            console.log("r2: ",id)
+            console.log("reconnecting,"+id)
         };
         connection.onmessage=function(event){
             if (String(event.data).includes("new id,")){
@@ -360,9 +388,11 @@ function reconnent(){
 
 }
 
+/*
 function keep_alive(){
     connection.send("k.a");
 }
+*/
 
 function run_room_process(){
     if (room_process[0]==false){
@@ -376,8 +406,8 @@ function run_room_process(){
             
         );
         //sending content script if user is host or not
-        setTimeout(notify_if_host,1000)
-        room_process[1]=setInterval(send_contentJs,6000)
+        setTimeout(notify_content_info,1000)
+        room_process[1]=setInterval(check_status,6000)
 
         connection.onmessage=function(event){
             var msg=String(event.data);
@@ -399,13 +429,14 @@ function run_room_process(){
 
 }
 
-function send_contentJs(){
+function check_status(){
     //if user exited room
     if (room_process[0]==false){
         console.log("exiting msging")
         clearInterval(room_process[1])
     }
     else{
+        reconnent();
         /*
         // if user not host
         if(!room[4]){
@@ -427,8 +458,9 @@ function send_contentJs(){
   
 }
 
-function notify_if_host(){
-    //console.log("N I H ",room[4])
-    chrome.tabs.sendMessage(room[3],String(room[4]),function(response){ //{command:"W?"}
+function notify_content_info(){
+    console.log("N I H ",room[4])
+
+    chrome.tabs.sendMessage(room[3],String(room[4]+","+room[2]),function(response){ //{command:"W?"}
     }) 
 }

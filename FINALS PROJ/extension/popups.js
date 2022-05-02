@@ -1,4 +1,4 @@
-//console.log("content@#@$#@%$#@%");
+
 window.onload=function(){
 
     //CREATE ROOM

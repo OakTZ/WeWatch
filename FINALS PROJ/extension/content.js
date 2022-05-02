@@ -4,9 +4,12 @@
 //boolean to not lets
 
 var video
-var current_state
+var vidUrl
 
-var ishost
+var playButton
+
+
+var ishost=false
 
 var timeline
 
@@ -26,8 +29,11 @@ else document.addEventListener('DOMContentLoaded',process)
 function process(){
 
     video = document.querySelector('video');
+
+    playButton=document.getElementsByClassName("ytp-play-button ytp-button")[0]
+    bar=document.getElementsByClassName("ytp-progress-bar-container")[0]
+
     video.pause();
-    current_state="paused";
 
 
     //ON MESSAGE FROM background.js
@@ -39,15 +45,30 @@ function process(){
             console.log("cmd")
             run_command(message);
         }
+        
         else{
-            if(message=="true"){
+
+            data=message.split(",")
+
+            //ishost
+            
+            if(data[0]=="true"){
                 console.log("t");
                 ishost=true;
             }
-            else if(message=="false"){
+            else if(data[0]=="false"){
+                console.log("f");
                 ishost=false;
             }
+            
+            
+
+            //vidUrl
+            vidUrl=data[1]
+            console.log(vidUrl)
+
         }
+        
 
 
         return true; //stopping message port closing
@@ -61,21 +82,24 @@ function process(){
         console.log("IN CLICK")
         console.log(ishost)
         if(!ishost){
+            console.log("IN IF")
             if (video.paused){
+                console.log("PLAYING")
                 video.play();
             }
             else{
+                console.log("PAUSING")
                 video.pause();
             }
         }
     });
 
 
-    //EVENTS
+    //VIDEO EVENTS
 
     video.onplaying=function(){//if user pressed play
         if (ishost && server_order==false){
-            current_state="playing";
+
             //letting know to server to play everyone in spesific timestamp
             chrome.runtime.sendMessage("watching_room,playing,"+video.currentTime, (response) => {
                     
@@ -84,7 +108,7 @@ function process(){
     }
     video.onpause=function(){
         if (ishost && server_order==false){
-            current_state="paused";
+
             //letting know to server to pause everyone in spesific timestamp
             chrome.runtime.sendMessage("watching_room,paused,"+video.currentTime, (response) => {
                     
@@ -95,23 +119,45 @@ function process(){
         if (ishost && server_order==false){
             //if user changed timeline
             if (Math.abs(video.currentTime-timeline)>1){
+
                 //pauseing vid ->letting know to server that time has changed->server plays in sync
-                chrome.runtime.sendMessage("watching_room,moved tl,"+video.currentTime, (response) => {
+                chrome.runtime.sendMessage("watching_room,move tl,"+video.currentTime, (response) => {
                     
                 });
             }
+
             timeline=video.currentTime;
         }
+        /*
+        else if (!ishost){ // need to figure out problem
+            video.currentTime=timeline;
+        }
+        */
 
     }
 
 
-    //setInterval(listen,100)
-    setInterval(check_for_ad,500)
+    //WINDOW EVENTS
+    /*
+    window.onbeforeunload=function(){
 
-    if(ishost==false){
-        setInterval(disablecontrol,5000);
+        if()
+        console.log("exiting content.js")
+        chrome.runtime.sendMessage("watching_room,exited", (response) => {
+                    
+        });
     }
+    */
+    
+
+
+    setInterval(check_for_ad,500);
+
+    
+    setInterval(disablecontrol,1000);
+    
+
+    setInterval(is_open,1000);
      
 
 }
@@ -132,14 +178,30 @@ function check_for_ad(){
 }
 
 
-function disablecontrol(){
+function disablecontrol(){ // can also hide tl bar
     
-    var playButton=document.getElementsByClassName("ytp-play-button ytp-button")[0]
-
-    if(playButton!=undefined &&playButton.length>0){
-        playButton.remove();
+    if(!ishost && playButton.style.display!="none"){
+        console.log("disabling control")
+        playButton.style.display="none";
+        bar.style.display="none";
+    }
+    else if(ishost && playButton.style.display!=""){
+        console.log("allowing control")
+        playButton.style.display="";
+        bar.style.display="";
     }
 
+}
+
+function is_open(){
+
+    if (location.href!=vidUrl && vidUrl!=null){
+        console.log("exiting content.js from window")
+        chrome.runtime.sendMessage("watching_room,exited", (response) => {
+                    
+        });
+        window.close()
+    }
 }
 
 // *****HELPING FUNCTIONS*****
@@ -196,27 +258,6 @@ function wait_time(e_time){
     const now=new Date().getTime(); //gets milisecs since Unix Epoch in 1.1.1970 - UTC
     return (parseInt(e_time)-now);
 }
-
-function commands(cmd){
-    if (cmd=="play"){
-        video.play();
-    }
-    else if (cmd=="pause"){
-        video.pause();
-    }
-    else if (String(cmd).includes("move to time")){
-        cmd=cmd.split(":")
-        const t=parseInt(cmd[1]);
-        video.pause();
-        video.currentTime=t;
-    }
-}
-
-
-
-
-
-
 
 
 

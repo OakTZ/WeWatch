@@ -13,7 +13,7 @@ global ids
 ids={"ID":"x"} #ID=8TTTF  #to delete do del ids["ID"]
 
 global rooms
-rooms={"ID":(["password","url"],["x","y","z"])} #ID=6FFTF , "password=4TTTF"
+rooms={"ID":(["password","url","current_time"],["x","y","z"])} #ID=6FFTF , "password=4TTTF"
 
 global used_combs
 used_combs=[]
@@ -28,7 +28,7 @@ def create_new_room(soc_id,url):
     global rooms
     new_id=generate_comb(6,False,False,True,False)
     password=generate_comb(4,True,True,True,False)
-    rooms[new_id]=([password,url],[soc_id])
+    rooms[new_id]=([password,url,"current_time"],[soc_id])
     return new_id
 
 def generate_comb(length,lowercase,uppercase,digits,symbols):
@@ -52,17 +52,24 @@ def generate_comb(length,lowercase,uppercase,digits,symbols):
     
 #returns time since Unix Epoch in 1.1.1970 - UTC  
 def cmd_utc():
-    delay=300
+    delay=500
     return (int(round(time.time() * 1000)+delay)) #rounding to ms
 
 async def broadcast(msg):
+    global rooms
+
     data=msg.split(',') #0-w.r,1-room id,2-user id,3-command,4-vid tl
+    rooms[data[1]][0][2]=data[4]#setting current time in watching room
+    #print(f"set current time in room: {data[1]} to : {rooms[data[1]][0][2]}")
     utc=cmd_utc()
-    try:
-        for uId in (rooms[data[1]][1]):
+
+    for uId in (rooms[data[1]][1]):
+        try:
             await ids[uId].send((str(data[0])+","+str(data[3])+","+str(data[4])+","+str(utc))) #0-w.r,1-command,2-vid tl,3-UTC
-    except Exception as e :
-        print(e)
+        except Exception as e :
+            print("exe:")
+            print(e)
+
 
 
 
@@ -72,11 +79,20 @@ async def broadcast(msg):
 
 async def listen(websocket,path):
     global rooms
+    global ids
+
     try:
         async for message in websocket:
 
             if ("w.r" in message):
-                await broadcast(message) #maybe needs await
+
+                if("k.a" in message): #keep connection alive
+                    data=message.split(",") #w.r,k.a,uId,rId
+                    re=data[2] in rooms[data[3]][1]
+                    await websocket.send(str(re))
+
+                else:
+                    await broadcast(message) #maybe needs await
                 
                 
 
@@ -86,20 +102,24 @@ async def listen(websocket,path):
 
                     print("NEW USER HAS JOINED")
                     soc_id=(create_new_id(websocket))
+                    print(ids)
                     await websocket.send(soc_id)
 
                 elif("reconnecting" in message):
                     data=message.split(',')
+                    print(data)
                     check_id=data[1]
+                    print("want to recconect:" ,data[1])
                     if check_id in ids:
+                        print("OK")
                         ids[check_id]=websocket
                         await websocket.send("reconnected you by id")
 
                     else:
-                        soc_id=(create_new_id(websocket))
-                        await websocket.send("new_id,"+soc_id)
+                        new_id=(create_new_id(websocket))
+                        await websocket.send("new_id,"+new_id)
 
-                        await websocket.send(soc_id)
+                        #await websocket.send(soc_id)
 
                 if ("create_room," in message):
 
@@ -120,6 +140,8 @@ async def listen(websocket,path):
                             rooms[room_id][1].append(soc_id)
                             print(rooms)
                             await websocket.send(f"TRUE,{rooms[room_id][0][1]}")
+                            utc=cmd_utc()
+                            await websocket.send("w.r,move tl,"+rooms[room_id][0][2]+","+utc) #0-w.r,1-command,2-vid tl,3-UTC
                         else:
                             await websocket.send("FALSE")
                     except:
@@ -130,6 +152,8 @@ async def listen(websocket,path):
                     data=message.split(',')
                     room_id=data[1]
                     soc_id=data[-1]
+
+                    print(f"user: {soc_id} exited room {room_id}")
 
                     rooms[room_id][1].remove(soc_id)
 
