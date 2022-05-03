@@ -30,6 +30,7 @@ function process(){
 
     video = document.querySelector('video');
 
+
     playButton=document.getElementsByClassName("ytp-play-button ytp-button")[0]
     bar=document.getElementsByClassName("ytp-progress-bar-container")[0]
 
@@ -76,23 +77,16 @@ function process(){
     });
 
 
-
+    
     //disable controls for non-host users
-    video.addEventListener('click',function(){
-        console.log("IN CLICK")
-        console.log(ishost)
-        if(!ishost){
-            console.log("IN IF")
-            if (video.paused){
-                console.log("PLAYING")
-                video.play();
-            }
-            else{
-                console.log("PAUSING")
-                video.pause();
+    window.addEventListener('click', event => {
+        if (event.target.matches('video')) {
+            if(!ishost){
+                event.stopPropagation();
             }
         }
-    });
+    }, true);
+    
 
 
     //VIDEO EVENTS
