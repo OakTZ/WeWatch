@@ -11,8 +11,11 @@
 var connection
 
 var id
+var username // need to add username insert -> do it in the popups
 
 var room=["id","password","url","tabid","ishost"]
+
+var room_members=[] // need to add participants of room
 
 var in_room=false
 
@@ -161,6 +164,7 @@ chrome.tabs.onRemoved.addListener (function(tabId) {
 
             in_room=false;
             room=["id","password","url","tabid"];
+            room_members=[]
         }
 
         
@@ -248,6 +252,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
             in_room=false;
             room=["id","password","url","tabid"];
+            room_members=[]
         }
     }
 
@@ -257,7 +262,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
         //notify that the user in watching room
         if(message=="in watching room"){
             //give popup room info
-            sendResponse(room[0]+","+room[1]);
+            sendResponse(room[0]+","+room[1]+","+room_members.toString());
             
 
         }
@@ -276,6 +281,9 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
                 room[2]=data[2];
                 room[3]=current_tab[1];
                 room[4]=true;
+                //need to add username list here 
+                room_members.push(username)
+                console.log(room_members)
 
                 in_room=true;
                 chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
@@ -298,17 +306,23 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
             connection.send("join_room,"+msg[1]+","+msg[2]+","+id);
 
             connection.onmessage=function(event){
-                var data=event.data;
-                data=data.split(',');
+                let data=event.data.split(',');
+                //data=data.split(',');
                 if(data[0]=="TRUE"){
             
-                    room[0]=msg[1]
-                    room[1]=msg[2]
-                    room[2]=data[1]
-                    room[4]=false
-                    in_room=true
+                    room[0]=msg[1];
+                    room[1]=msg[2];
+                    room[2]=data[1];
+                    room[4]=false;
+                    in_room=true;
+                    let temp=data;
+
+                    temp.splice(0,2);
+                    room_members=temp;
+                   
                     //console.log("eve data "+String(event.data))
                     sendResponse(String(event.data));
+
                     
                 }
                 else{
@@ -336,9 +350,15 @@ function connect(){
         connection.send("get_id");
     };
     connection.onmessage=function(event){
-        let temp=event.data;
-        id=temp;
-        console.log("connection: ",id);
+        let data=event.data.split(',');
+        
+        let temp_i=data[0]
+        id=temp_i;
+
+        let temp_u=data[1]
+        username=temp_u;
+        
+        console.log("connection: ",id,",",username);
     };
     //setInterval(keep_alive,10000)
        
@@ -357,8 +377,12 @@ function reconnent(){
         connection.onmessage=function(event){
             if (String(event.data).includes("new id,")){
                 console.log("getting new id...");
-                let temp=(event.data.split(','))[1];
-                id=temp;
+
+                let temp_i=(event.data.split(','))[1]
+                id=temp_i;
+
+                let temp_u=(event.data.split(','))[2]
+                username=temp_u;
             }
             else{
                 console.log(event.data);
@@ -377,7 +401,12 @@ function reconnent(){
         connection.onmessage=function(event){
             if (String(event.data).includes("new id,")){
                 console.log("getting new id...");
-                id=(event.data.split(','))[1]
+
+                let temp_i=(event.data.split(','))[1]
+                id=temp_i;
+
+                let temp_u=(event.data.split(','))[2]
+                username=temp_u;
             }
             else{
                 console.log(event.data);
@@ -413,9 +442,18 @@ function run_room_process(){
         room_process[1]=setInterval(check_status,6000);
 
         connection.onmessage=function(event){
+
             var msg=String(event.data);
+
             console.log("got msg!!!!: ",msg);
+
             if(msg.includes("w.r,")){
+
+                if (msg.includes("new_u")){
+                    console.log("new member has joined")
+                    chrome.runtime.sendMessage(msg)
+                }
+
                 console.log("sending content.js"); //0-w.r,1-command,2-vid tl,3-UTC
                 chrome.tabs.sendMessage(room[3],msg,function(response){ //{command:"W?"}
                     
@@ -435,28 +473,12 @@ function run_room_process(){
 function check_status(){
     //if user exited room
     if (room_process[0]==false){
+
         console.log("exiting msging");
         clearInterval(room_process[1]);
     }
     else{
-        reconnent();
-        /*
-        // if user not host
-        if(!room[4]){
-            connection.onmessage=function(event){
-                console.log("got msg!!!!!!!!!!!")
-                var msg=String(event.data);
-                console.log("msg: ",msg)
-                if(msg.includes("w.r,")){
-                    chrome.tabs.sendMessage(room[3],msg,function(response){ //{command:"W?"}
-                        //console.log(response)
-                    }) 
-                }
-                
-            }
-        }
-        */
-    
+        reconnent();   
     }     
   
 }

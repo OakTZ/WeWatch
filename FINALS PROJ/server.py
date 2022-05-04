@@ -1,9 +1,12 @@
-from math import comb
+#from math import comb
 import websockets
 import asyncio
 import string
 import random
 import time
+from random_username.generate import generate_username
+
+
 
 
 
@@ -12,8 +15,14 @@ import time
 global ids
 ids={"ID":"x"} #ID=8TTTF  #to delete do del ids["ID"]
 
+global usernames
+usernames={"ID":"uname"}
+
 global rooms
 rooms={"ID":(["password","url","current_time"],["x","y","z"])} #ID=6FFTF , "password=4TTTF"
+
+global room_members
+room_members={"ID":["u1","u2","u3"]}
 
 global used_combs
 used_combs=[]
@@ -23,12 +32,23 @@ def create_new_id(client):
     new_id=generate_comb(8,True,True,True,False)
     ids[new_id]=client
     return new_id
+
+def create_new_username(id):
+    global usernames
+    new_uname=generate_username()[0]
+
+    while True:
+        if new_uname not in usernames.values():
+            usernames[id]=new_uname
+            return new_uname
+
                 
 def create_new_room(soc_id,url):
     global rooms
     new_id=generate_comb(6,False,False,True,False)
     password=generate_comb(4,True,True,True,False)
     rooms[new_id]=([password,url,"current_time"],[soc_id])
+    room_members[new_id]=[usernames[soc_id]]
     return new_id
 
 def generate_comb(length,lowercase,uppercase,digits,symbols):
@@ -58,17 +78,27 @@ def cmd_utc():
 async def broadcast(msg):
     global rooms
 
-    data=msg.split(',') #0-w.r,1-room id,2-user id,3-command,4-vid tl
-    rooms[data[1]][0][2]=data[4]#setting current time in watching room
-    #print(f"set current time in room: {data[1]} to : {rooms[data[1]][0][2]}")
-    utc=cmd_utc()
+    if "new_u" in msg:
+        #w.r,new_u,u1,u2,u3,u4,u5
+        for uId in (rooms[data[1]][1]):
+            try:
+                await ids[uId].send(msg) 
+            except Exception as e :
+                print("exe:")
+                print(e)
+        
+    else:
+        data=msg.split(',') #0-w.r,1-room id,2-user id,3-command,4-vid tl
+        rooms[data[1]][0][2]=data[4]#setting current time in watching room
+        #print(f"set current time in room: {data[1]} to : {rooms[data[1]][0][2]}")
+        utc=cmd_utc()
 
-    for uId in (rooms[data[1]][1]):
-        try:
-            await ids[uId].send((str(data[0])+","+str(data[3])+","+str(data[4])+","+str(utc))) #0-w.r,1-command,2-vid tl,3-UTC
-        except Exception as e :
-            print("exe:")
-            print(e)
+        for uId in (rooms[data[1]][1]):
+            try:
+                await ids[uId].send((str(data[0])+","+str(data[3])+","+str(data[4])+","+str(utc))) #0-w.r,1-command,2-vid tl,3-UTC
+            except Exception as e :
+                print("exe:")
+                print(e)
 
 
 
@@ -102,8 +132,10 @@ async def listen(websocket,path):
 
                     print("NEW USER HAS JOINED")
                     soc_id=(create_new_id(websocket))
+                    u_name=create_new_username(soc_id)
                     print(ids)
-                    await websocket.send(soc_id)
+                    print(usernames)
+                    await websocket.send(soc_id+","+u_name)
 
                 elif("reconnecting" in message):
                     data=message.split(',')
@@ -117,7 +149,8 @@ async def listen(websocket,path):
 
                     else:
                         new_id=(create_new_id(websocket))
-                        await websocket.send("new_id,"+new_id)
+                        u_name=create_new_username(soc_id)
+                        await websocket.send("new_id,"+new_id+","+u_name)
 
                         #await websocket.send(soc_id)
 
@@ -137,9 +170,18 @@ async def listen(websocket,path):
                     soc_id=data[-1]
                     try:
                         if (rooms[room_id][0][0]==room_password):
+                            
+                            room_members[room_id].append(usernames[soc_id])
+
+                            str_members=','.join(room_members[room_id])
+                            broadcast(f"w.r,new_u,{str_members}")
+
                             rooms[room_id][1].append(soc_id)
+
                             print(rooms)
-                            await websocket.send(f"TRUE,{rooms[room_id][0][1]}")
+
+                            await websocket.send(f"TRUE,{rooms[room_id][0][1]},{str_members}") #TRUE,url,u1,u2,u3...
+
                             utc=cmd_utc()
                             await websocket.send("w.r,move tl,"+rooms[room_id][0][2]+","+utc) #0-w.r,1-command,2-vid tl,3-UTC
                         else:
@@ -156,6 +198,7 @@ async def listen(websocket,path):
                     print(f"user: {soc_id} exited room {room_id}")
 
                     rooms[room_id][1].remove(soc_id)
+                    room_members[room_id].remove(usernames[soc_id])
 
                     #checks if room is empty
                     if not (rooms[room_id][1]):

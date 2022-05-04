@@ -1,0 +1,29 @@
+body{
+
+    background-color:rgb(40, 44, 52);
+    border-radius: 20px;
+
+}
+
+
+
+h1{
+    font-family:Fantasy,"Copperplate";
+    color: red;
+    font-size: 50px;
+}
+
+h2{
+    font-family: Arial, Helvetica, sans-serif;
+    color: white;
+    font-size: 30px;
+    text-decoration-line: underline;
+    text-decoration-color: red;  
+}
+
+
+p{
+    font-family: Arial, Helvetica, sans-serif;
+    color: white;
+    font-size: 20px;
+}
