@@ -267,6 +267,10 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
         }
 
+        else if(message=="username"){
+            sendResponse(username)
+        }
+
         //create new watching room
         else if (message == 'create new watching room') { //need to exit old one when created new one
 

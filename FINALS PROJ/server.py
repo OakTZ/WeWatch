@@ -110,6 +110,7 @@ async def broadcast(msg):
 async def listen(websocket,path):
     global rooms
     global ids
+    global used_combs
 
     try:
         async for message in websocket:
@@ -202,8 +203,11 @@ async def listen(websocket,path):
 
                     #checks if room is empty
                     if not (rooms[room_id][1]):
+                        # need to delete room id and password from used combs
+
                         #delete room
                         del rooms[room_id]
+
                     print(rooms)
                     
                 else:

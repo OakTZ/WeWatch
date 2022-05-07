@@ -45,6 +45,8 @@ function process(){
         if(message.includes("w.r,")){
             console.log("cmd")
             run_command(message);
+
+            return true; //stopping message port closing
         }
         
         else{
@@ -62,17 +64,18 @@ function process(){
                 ishost=false;
             }
             
-            
 
             //vidUrl
             vidUrl=data[1]
             console.log(vidUrl)
 
+            return true; //stopping message port closing
+
         }
         
 
 
-        return true; //stopping message port closing
+        //return true; //stopping message port closing
 
     });
 
@@ -144,8 +147,32 @@ function process(){
     */
     
 
+    //AD BLOCKER 
+    let observer = new MutationObserver(mutations => { //every time a change is happend in the DOM
 
-    setInterval(check_for_ad,500);
+        console.log("OBERVER")
+
+        var skipButton=document.getElementsByClassName("ytp-ad-skip-button");
+        var unskipAdd=document.querySelector(".html5-video-player.ad-showing video");
+
+        //checking if skip button is present
+        if(skipButton!=undefined && skipButton.length>0){
+
+            console.log("AD DETECTED - SKIPPABLE");
+            skipButton[0].click();
+        }
+        //if there is unskippable ad
+        else if(unskipAdd!=undefined){
+
+            console.log("AD DETECTED - UNSKIPPABLE");
+            unskipAdd.currentTime=10000;
+        }
+        
+    });
+
+    observer.observe(document, { childList: true, subtree: true });
+
+    //setInterval(check_for_ad,500);
 
     
     setInterval(disablecontrol,1000);
@@ -172,7 +199,8 @@ function check_for_ad(){
 }
 
 
-function disablecontrol(){ // can also hide tl bar
+// DISABLE/ENBALE CONTROLS FOR USERS
+function disablecontrol(){ 
     
     if(!ishost && playButton.style.display!="none"){
         console.log("disabling control")
@@ -187,6 +215,7 @@ function disablecontrol(){ // can also hide tl bar
 
 }
 
+//IF URL IS STILL OPEN
 function is_open(){
 
     if (location.href!=vidUrl && vidUrl!=null){
@@ -199,7 +228,6 @@ function is_open(){
 }
 
 // *****HELPING FUNCTIONS*****
-
 
 //runs the command on spesific UTC time
 function run_command(msg){ 
@@ -255,24 +283,3 @@ function wait_time(e_time){
 
 
 
-
-
-/*
-function listen(){
-
-    if(video.paused==false && current_state!="playing"){
-        current_state="playing";
-
-    }
-
-    else if (video.paused == true && current_state!="paused"){
-        current_state="paused";
-        chrome.runtime.sendMessage("PAUSE", (response) => {
-                
-        });
-    }
-
-    
-    
-}
-*/
