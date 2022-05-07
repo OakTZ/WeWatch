@@ -175,6 +175,7 @@ async def listen(websocket,path):
                             room_members[room_id].append(usernames[soc_id])
 
                             str_members=','.join(room_members[room_id])
+                            print(f"sending all :{str_members}")
                             broadcast(f"w.r,new_u,{str_members}")
 
                             rooms[room_id][1].append(soc_id)

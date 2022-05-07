@@ -8,6 +8,8 @@
 //
 // See https://developer.chrome.com/docs/extensions/reference/events/ for additional details.  
 
+
+/*
 var connection
 
 var id
@@ -22,6 +24,7 @@ var in_room=false
 var room_process=[false,"intervelId"]
 
 var current_tab=["url","id"]
+*/
 
 
 
@@ -33,27 +36,42 @@ chrome.runtime.onInstalled.addListener(async () => {
 
     let tab = await chrome.tabs.create({ url });
 
+
+    user={
+        connection:undefined,
+        id:"id",
+        username:"username",
+        room:["id","password","url","tabid","ishost"],
+        room_members:[],
+        in_room:false,
+        room_process:[false,"intervelId"],
+        current_tab:["url","id"]
+    
+    }
+    
     //connect to server and recive id 
     connect()
+    
+});
 
-}
-)
 
 //WHEN THE ACTIVE TAB CHANGES CHROME
 chrome.tabs.onActivated.addListener( function(activeInfo){
+
+    console.log(user.username)
 
     //checks current tab and update the popup accordingly
     chrome.tabs.get(activeInfo.tabId, function(tab){
         var u = tab.url;
         //console.log("OnActivated-you are here: "+u);
 
-        current_tab[0]=u;
-        current_tab[1]=tab.id;
+        globalThis.user.current_tab[0]=u;
+        globalThis.user.current_tab[1]=tab.id;
 
-        if(u==room[2] && in_room && (current_tab[1]==room[3] || room[3]=="tabid")){
+        if(u==user.room[2] && user.in_room && (user.current_tab[1]==user.room[3] || user.room[3]=="tabid")){
 
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
-            room[3]=tab.id;
+            globalThis.user.room[3]=tab.id;
 
             console.log("onActivated did it")
             run_room_process();
@@ -62,7 +80,7 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
 
 
             chrome.action.setPopup({popup: 'htmls/watching_popup.html'});
-            current_tab[0]=u;
+            globalThis.user.current_tab[0]=u;
 
             //console.log("set current tab to: "+ current_tab)
         }
@@ -82,16 +100,21 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
 
 //WHEN THE TAB IS UPDATED -I NEED TO TAKE INTO ACCOUNT IF USER GOES BACKTAB I NEEED TO CHANGE ROOM TO FALSE!
 chrome.tabs.onUpdated.addListener(function (tabId, change, tab) {
+
+
+    console.log(user.username)
+
+
     //console.log("UPDATE")
     //checks if you changed current tab - change is the object of things that have changes and does not have id - id stays the same!!
     //console.log("change.url: "+ change.url)
     if (tab.active && change.url) {
-        current_tab[0]=change.url;
-        current_tab[1]=tab.id;
+        globalThis.user.current_tab[0]=change.url;
+        globalThis.user.current_tab[1]=tab.id;
 
-        if (String(change.url)==room[2] && in_room && (current_tab[1]==room[3] || room[3]=="tabid")){
+        if (String(change.url)==user.room[2] && user.in_room && (user.current_tab[1]==user.room[3] || user.room[3]=="tabid")){
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
-            room[3]=tab.id;
+            globalThis.user.room[3]=tab.id;
             //console.log("onUpdated did it, room[3]: "+room[3])
             run_room_process();
         }
@@ -100,7 +123,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, change, tab) {
 
             chrome.action.setPopup({popup: 'htmls/watching_popup.html'});
 
-            current_tab[0]=change.url;
+            globalThis.user.current_tab[0]=change.url;
 
 
 
@@ -152,19 +175,22 @@ chrome.tabs.onCreated.addListener(function(tab){
 //WHEN CLOSING A TAB
 chrome.tabs.onRemoved.addListener (function(tabId) {
 
-    if (in_room){
+    console.log(user.username)
+
+
+    if (user.in_room){
         //console.log("current tab: "+current_tab[0]+" room tab: "+room[2])
-        if (current_tab[0]==room[2]){
+        if (user.current_tab[0]==user.room[2]){
             console.log("OnRemoved - user went out of watching room");
-            room_process[0]=false;
+            globalThis.user.room_process[0]=false;
 
 
             reconnent();
-            connection.send("exit_room,"+room[0]+","+id);
+            globalThis.user.connection.send("exit_room,"+user.room[0]+","+user.id);
 
-            in_room=false;
-            room=["id","password","url","tabid"];
-            room_members=[]
+            globalThis.user.in_room=false;
+            globalThis.user.room=["id","password","url","tabid"];
+            globalThis.user.room_members=[]
         }
 
         
@@ -174,13 +200,16 @@ chrome.tabs.onRemoved.addListener (function(tabId) {
 
 //WHEN NAVIGATION IS COMMITTED
 chrome.webNavigation.onCommitted.addListener(function(details) {
+
+    console.log(user.username)
+
     
     //if a room tab has been refreshed
-    if(["reload", "link", "typed", "generated"].includes(details.transitionType) && details.url==room[2] &&details.tabId==room[3]){ //NEED TO FIX -> JUST WHEN RELOADING YOU SHOULD REBOT
+    if(["reload", "link", "typed", "generated"].includes(details.transitionType) && details.url==user.room[2] &&details.tabId==user.room[3]){ //NEED TO FIX -> JUST WHEN RELOADING YOU SHOULD REBOT
         //content.js rebot
         console.log("REBOTING");
-        clearInterval(room_process[1]);
-        room_process[0]=false;
+        clearInterval(user.room_process[1]);
+        globalThis.user.room_process[0]=false;
         run_room_process();
     }
         
@@ -214,8 +243,11 @@ chrome.webRequest.onBeforeRedirect.addListener(function(details){
 //LISTEN TO MESSAGE OVER CONTENT SCRIPT
 chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
+    console.log(user.username)
+
+
     //in-room commands (if user is host)
-    if (message.split(',')[0]=="watching_room" && in_room &&room[4]){
+    if (message.split(',')[0]=="watching_room" && user.in_room &&user.room[4]){
 
         data=message.split(',');
 
@@ -223,36 +255,36 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
             console.log("PLAYING");
 
             reconnent();
-            connection.send("w.r,"+room[0]+","+id+",play,"+data[2]); //0-w.r,1-room id,2-user id,3-command,4-vid tl
+            globalThis.user.connection.send("w.r,"+user.room[0]+","+user.id+",play,"+data[2]); //0-w.r,1-room id,2-user id,3-command,4-vid tl
         }
 
         else if(data[1]=="paused"){
             console.log("PAUSED");
 
             reconnent();
-            connection.send("w.r,"+room[0]+","+id+",pause,"+data[2]);
+            globalThis.user.connection.send("w.r,"+user.room[0]+","+user.id+",pause,"+data[2]);
         }
 
         else if (data[1]=="move tl"){
             console.log("MOVED TL");
 
             reconnent();
-            connection.send("w.r,"+room[0]+","+id+",move tl,"+data[2]);
+            globalThis.user.connection.send("w.r,"+user.room[0]+","+user.id+",move tl,"+data[2]);
         }
 
         else if (data[1]=="exited"){
 
             console.log("User exited watching room - content script");
 
-            room_process[0]=false;
+            globalThis.user.room_process[0]=false;
 
             reconnent();
             console.log("OnContentScript - user went out of watching room");
-            connection.send("exit_room,"+room[0]+","+id);
+            globalThis.user.connection.send("exit_room,"+user.room[0]+","+user.id);
 
-            in_room=false;
-            room=["id","password","url","tabid"];
-            room_members=[]
+            globalThis.user.in_room=false;
+            globalThis.user.room=["id","password","url","tabid"];
+            globalThis.user.room_members=[]
         }
     }
 
@@ -262,34 +294,34 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
         //notify that the user in watching room
         if(message=="in watching room"){
             //give popup room info
-            sendResponse(room[0]+","+room[1]+","+room_members.toString());
+            sendResponse(user.room[0]+","+user.room[1]+","+user.room_members.toString());
             
 
         }
 
         else if(message=="username"){
-            sendResponse(username)
+            sendResponse(user.username)
         }
 
         //create new watching room
         else if (message == 'create new watching room') { //need to exit old one when created new one
 
             reconnent();
-            connection.send("create_room,"+current_tab[0]+","+id);
+            globalThis.user.connection.send("create_room,"+user.current_tab[0]+","+user.id);
 
-            connection.onmessage=function(event){
+            globalThis.user.connection.onmessage=function(event){
                 var data=event.data;
                 data=data.split(',')
-                room[0]=data[0];
-                room[1]=data[1];
-                room[2]=data[2];
-                room[3]=current_tab[1];
-                room[4]=true;
+                globalThis.user.room[0]=data[0];
+                globalThis.user.room[1]=data[1];
+                globalThis.user.room[2]=data[2];
+                globalThis.user.room[3]=user.current_tab[1];
+                globalThis.user.room[4]=true;
                 //need to add username list here 
-                room_members.push(username)
-                console.log(room_members)
+                globalThis.user.room_members.push(user.username)
+                console.log(user.room_members)
 
-                in_room=true;
+                globalThis.user.in_room=true;
                 chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
                 sendResponse("^");
 
@@ -307,22 +339,22 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
             //console.log("JOINING ROOM,"+data[1]+","+data[2])
             reconnent();
-            connection.send("join_room,"+msg[1]+","+msg[2]+","+id);
+            globalThis.user.connection.send("join_room,"+msg[1]+","+msg[2]+","+user.id);
 
-            connection.onmessage=function(event){
+            globalThis.user.connection.onmessage=function(event){
                 let data=event.data.split(',');
                 //data=data.split(',');
                 if(data[0]=="TRUE"){
             
-                    room[0]=msg[1];
-                    room[1]=msg[2];
-                    room[2]=data[1];
-                    room[4]=false;
-                    in_room=true;
+                    globalThis.user.room[0]=msg[1];
+                    globalThis.user.room[1]=msg[2];
+                    globalThis.user.room[2]=data[1];
+                    globalThis.user.room[4]=false;
+                    globalThis.user.in_room=true;
                     let temp=data;
 
                     temp.splice(0,2);
-                    room_members=temp;
+                    globalThis.user.room_members=temp;
                    
                     //console.log("eve data "+String(event.data))
                     sendResponse(String(event.data));
@@ -349,44 +381,45 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
 
 function connect(){
-    connection = new WebSocket('ws://192.168.3.16:8765'); //'ws://localhost:8765'
-    connection.onopen = function(e) {
-        connection.send("get_id");
+    globalThis.user.connection = new WebSocket('ws://192.168.3.16:8765'); //'ws://localhost:8765'
+    globalThis.user.connection.onopen = function(e) {
+        globalThis.user.connection.send("get_id");
     };
-    connection.onmessage=function(event){
+    globalThis.user.connection.onmessage=function(event){
         let data=event.data.split(',');
         
         let temp_i=data[0]
-        id=temp_i;
+        globalThis.user.id=temp_i;
 
         let temp_u=data[1]
-        username=temp_u;
+        globalThis.user.username=temp_u;
         
-        console.log("connection: ",id,",",username);
+        
+        console.log("connection: ",user.id,",",user.username);
     };
     //setInterval(keep_alive,10000)
        
 }
 
 function reconnent(){
-    console.log(id);
-    if (connection==null){
+    console.log(user.id);
+    if (globalThis.user.connection==null){
         console.log("reconnecting!!");
-        connection = new WebSocket('ws://192.168.3.16:8765');
-        console.log("r1: ",id);
-        connection.onopen = function(e) {
-            console.log("r2: ",id);
-            connection.send("reconnecting,"+id);
+        globalThis.user.connection = new WebSocket('ws://192.168.3.16:8765');
+        console.log("r1: ",globalThisuser.id);
+        globalThis.user.connection.onopen = function(e) {
+            console.log("r2: ",globalThisuser.id);
+            globalThis.user.connection.send("reconnecting,"+globalThisuser.id);
         };
-        connection.onmessage=function(event){
+        globalThis.user.connection.onmessage=function(event){
             if (String(event.data).includes("new id,")){
                 console.log("getting new id...");
 
                 let temp_i=(event.data.split(','))[1]
-                id=temp_i;
+                globalThis.user.id=temp_i;
 
                 let temp_u=(event.data.split(','))[2]
-                username=temp_u;
+                globalThis.user.username=temp_u;
             }
             else{
                 console.log(event.data);
@@ -394,23 +427,23 @@ function reconnent(){
 
         };
     }
-    else if (connection.readyState != 1 ){
+    else if (globalThis.user.connection.readyState != 1 ){
         console.log("reconnecting!!");
-        connection = new WebSocket('ws://192.168.3.16:8765');
-        console.log("r1: ",id);
-        connection.onopen = function(e) {
-            console.log("r2: ",id);
-            console.log("reconnecting,"+id);
+        globalThis.user.connection = new WebSocket('ws://192.168.3.16:8765');
+        console.log("r1: ",user.id);
+        globalThis.user.connection.onopen = function(e) {
+            console.log("r2: ",user.id);
+            globalThis.user.connection.send("reconnecting,"+user.id);
         };
-        connection.onmessage=function(event){
+        globalThis.user.connection.onmessage=function(event){
             if (String(event.data).includes("new id,")){
                 console.log("getting new id...");
 
                 let temp_i=(event.data.split(','))[1]
-                id=temp_i;
+                globalThis.user.id=temp_i;
 
                 let temp_u=(event.data.split(','))[2]
-                username=temp_u;
+                globalThis.user.username=temp_u;
             }
             else{
                 console.log(event.data);
@@ -431,9 +464,9 @@ function keep_alive(){
 */
 
 function run_room_process(){
-    if (room_process[0]==false){
-        room_process[0]=true;
-        const tabId=parseInt(room[3]);
+    if (user.room_process[0]==false){
+        globalThis.user.room_process[0]=true;
+        const tabId=parseInt(user.room[3]);
         chrome.scripting.executeScript(
             {
             target:{tabId: tabId}, 
@@ -443,9 +476,9 @@ function run_room_process(){
         );
         //sending content script if user is host or not
         setTimeout(notify_content_info,1000);
-        room_process[1]=setInterval(check_status,6000);
+        globalThis.user.room_process[1]=setInterval(check_status,6000);
 
-        connection.onmessage=function(event){
+        globalThis.user.connection.onmessage=function(event){
 
             var msg=String(event.data);
 
@@ -459,7 +492,7 @@ function run_room_process(){
                 }
 
                 console.log("sending content.js"); //0-w.r,1-command,2-vid tl,3-UTC
-                chrome.tabs.sendMessage(room[3],msg,function(response){ //{command:"W?"}
+                chrome.tabs.sendMessage(user.room[3],msg,function(response){ //{command:"W?"}
                     
                 }) 
             }
@@ -476,10 +509,10 @@ function run_room_process(){
 
 function check_status(){
     //if user exited room
-    if (room_process[0]==false){
+    if (user.room_process[0]==false){
 
         console.log("exiting msging");
-        clearInterval(room_process[1]);
+        clearInterval(user.room_process[1]);
     }
     else{
         reconnent();   
@@ -488,8 +521,8 @@ function check_status(){
 }
 
 function notify_content_info(){
-    console.log("N I H ",room[4])
+    console.log("N I H ",user.room[4])
 
-    chrome.tabs.sendMessage(room[3],String(room[4]+","+room[2]),function(response){ //{command:"W?"}
+    chrome.tabs.sendMessage(user.room[3],String(user.room[4]+","+user.room[2]),function(response){ //{command:"W?"}
     }) 
 }
