@@ -26,20 +26,39 @@ var room_process=[false,"intervelId"]
 var current_tab=["url","id"]
 */
 
+//every time the background.js reloads - gets user's info
+/*
+chrome.storage.local.get(['userLocal'], async function (result) {
+    let userLocal=result.userLocal;
+    console.log("userlocal: ",userLocal)
+    if (userLocal===undefined){
+        const user={
+            connection:undefined,
+            id:"id",
+            username:"username",
+            room:["id","password","url","tabid","ishost"],
+            room_members:[],
+            in_room:false,
+            room_process:[false,"intervelId"],
+            current_tab:["url","id"]
+        }
+        console.log("bla",user)
+        
+        chrome.storage.local.set({userLocal: user}, function () {}); // save it in local.
+    }
+    
+});
+*/
 
-
-
-//WHEN THE EXTENTION IS BEING INSTALLED
-chrome.runtime.onInstalled.addListener(async () => {
-    //opens welcome page
-    let url = chrome.runtime.getURL("htmls/hello.html");
-
-    let tab = await chrome.tabs.create({ url });
-
-    //setting up the user var in chrome's local storage
-
-    chrome.storage.local.get(['userLocal'], async function (result) {
-
+//setting up user's info in local storage
+console.log("BLABLABLA")
+chrome.storage.local.get(['userLocal'], async function (result) {
+    let ul = result.userLocal;
+    console.log("UserLocal ",ul)
+    if (ul === undefined) {
+        console.log("entering user")
+        // it means there was nothing before. This way you don't overwrite
+        // the user object every time the backgorund.js loads.
         var user={
             connection:undefined,
             id:"id",
@@ -51,22 +70,43 @@ chrome.runtime.onInstalled.addListener(async () => {
             current_tab:["url","id"]
             }
         chrome.storage.local.set({userLocal: user}, function () {}); // save it in local.
-        
-    });
+    }
+});
+
+
+var user
+
+
+
+//WHEN THE EXTENTION IS BEING INSTALLED
+chrome.runtime.onInstalled.addListener(async () => {
+    //opens welcome page
+    let url = chrome.runtime.getURL("htmls/hello.html");
+
+    let tab = await chrome.tabs.create({ url });
+
+    
+    user= await get_user();
+    console.log("u: ",user);
     
     //connect to server and recive id 
     connect()
     
 });
 
+/*
+//WHEN BACKGROUND.JS IS ABOUT TO GO IDLE
+chrome.runtime.onSuspend.addListener(function (){
+    console.log("bruh")
+    update_user(user);//upload user before going idle
+});
+*/
+
 
 //WHEN THE ACTIVE TAB CHANGES CHROME
 chrome.tabs.onActivated.addListener( function(activeInfo){
-
-    //get user from storage
-    var user=get_user();
     
-
+    
     //checks current tab and update the popup accordingly
     chrome.tabs.get(activeInfo.tabId, function(tab){
         var u = tab.url;
@@ -74,14 +114,14 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
 
         user.current_tab[0]=u;
         user.current_tab[1]=tab.id;
-        user=update_user(user);
+        
 
         if(u==user.room[2] && user.in_room && (user.current_tab[1]==user.room[3] || user.room[3]=="tabid")){
 
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
             user.room[3]=tab.id;
 
-            user=update_user(user);
+            
 
             console.log("onActivated did it")
             run_room_process();
@@ -92,7 +132,7 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
             chrome.action.setPopup({popup: 'htmls/watching_popup.html'});
             user.current_tab[0]=u;
 
-            user=update_user(user);
+            
 
             //console.log("set current tab to: "+ current_tab)
         }
@@ -104,7 +144,7 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
     }); 
 
 
-    
+   
 
 
 });
@@ -112,11 +152,6 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
 
 //WHEN THE TAB IS UPDATED -I NEED TO TAKE INTO ACCOUNT IF USER GOES BACKTAB I NEEED TO CHANGE ROOM TO FALSE!
 chrome.tabs.onUpdated.addListener(function (tabId, change, tab) {
-
-    //get user from storage
-    var user=get_user();
-
-    console.log(user.username)
 
 
     //console.log("UPDATE")
@@ -126,14 +161,14 @@ chrome.tabs.onUpdated.addListener(function (tabId, change, tab) {
         
         user.current_tab[0]=change.url;
         user.current_tab[1]=tab.id;
-        user=update_user(user);
+        
 
         if (String(change.url)==user.room[2] && user.in_room && (user.current_tab[1]==user.room[3] || user.room[3]=="tabid")){
             chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
 
             user.room[3]=tab.id;
 
-            user=update_user(user);
+            
 
             //console.log("onUpdated did it, room[3]: "+room[3])
             run_room_process();
@@ -145,7 +180,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, change, tab) {
 
             user.current_tab[0]=change.url;
 
-            user=update_user(user);
+            
 
 
 
@@ -158,7 +193,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, change, tab) {
 
     }
 
-
+    
 });
 
 
@@ -197,8 +232,6 @@ chrome.tabs.onCreated.addListener(function(tab){
 //WHEN CLOSING A TAB
 chrome.tabs.onRemoved.addListener (function(tabId) {
 
-    //get user from storage
-    var user=get_user();
 
     //console.log(user.username)
 
@@ -210,7 +243,7 @@ chrome.tabs.onRemoved.addListener (function(tabId) {
             console.log("OnRemoved - user went out of watching room");
             user.room_process[0]=false;
 
-            user=update_user(user);
+            
 
 
             check_connection();
@@ -220,10 +253,9 @@ chrome.tabs.onRemoved.addListener (function(tabId) {
             user.room=["id","password","url","tabid"];
             user.room_members=[];
 
-            user=update_user(user);
+            
         }
-
-        
+    
     }
 
 });
@@ -232,7 +264,6 @@ chrome.tabs.onRemoved.addListener (function(tabId) {
 chrome.webNavigation.onCommitted.addListener(function(details) {
 
 
-    var user=get_user();
 
     console.log(user.username)
 
@@ -244,7 +275,8 @@ chrome.webNavigation.onCommitted.addListener(function(details) {
         clearInterval(user.room_process[1]);
         user.room_process[0]=false;
 
-        user=update_user(user);
+        
+        
         run_room_process();
     }
         
@@ -278,9 +310,6 @@ chrome.webRequest.onBeforeRedirect.addListener(function(details){
 //LISTEN TO MESSAGE OVER CONTENT SCRIPT
 chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
-    var user=get_user();
-    
-    console.log(user.username)
 
 
     //in-room commands (if user is host)
@@ -314,7 +343,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
             console.log("User exited watching room - content script");
 
             user.room_process[0]=false;
-            user.update_user(user);
+            
 
             check_connection();
             console.log("OnContentScript - user went out of watching room");
@@ -323,7 +352,9 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
             user.in_room=false;
             user.room=["id","password","url","tabid"];
             user.room_members=[]
-            user.update_user(user);
+
+            
+            
         }
     }
 
@@ -364,8 +395,8 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
                 user.in_room=true;
 
-                user.update_user(user);
-
+                
+                
                 chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
                 sendResponse("^");
 
@@ -400,7 +431,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
                     temp.splice(0,2);
                     user.room_members=temp;
 
-                    user.update_user(user);
+                    
                    
                     //console.log("eve data "+String(event.data))
                     sendResponse(String(event.data));
@@ -428,10 +459,9 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
 function connect(){
 
-    var user=get_user();
     
-    user.connection = new WebSocket('ws://localhost:8765'); //'ws://192.168.3.16:8765'
-    user=update_user(user);
+    
+    user.connection = new WebSocket('ws://192.168.3.16:8765'); //ws://localhost:8765
 
     user.connection.onopen = function(e) {
         user.connection.send("get_id");
@@ -445,7 +475,7 @@ function connect(){
         let temp_u=data[1];
         user.username=temp_u;
         
-        user=update_user(user);
+        
 
         console.log("connection: ",user.id,",",user.username);
     };
@@ -455,7 +485,7 @@ function connect(){
 
 function check_connection(){
 
-    var user=get_user();
+
 
     console.log(user.id);
     if (user.connection==null){
@@ -473,12 +503,12 @@ function check_connection(){
 
 function reconnect(){
 
-    var user=get_user();
+
 
     console.log("reconnecting!!");
     user.connection = new WebSocket('ws://192.168.3.16:8765');
 
-    user=update_user(user);
+    
 
     user.connection.onopen = function(e) {
         
@@ -496,7 +526,8 @@ function reconnect(){
             let temp_u=(event.data.split(','))[2]
             user.username=temp_u;
 
-            user=update_user(user);
+            
+            
         }
         else{
             console.log(event.data);
@@ -504,26 +535,39 @@ function reconnect(){
 
     };
 }
-
-function get_user(){
-    chrome.storage.local.get(['userLocal'], async function (result) {
-        var userLocal = result.userLocal;
-        return userLocal;
+/*
+async function get_user(){
+    console.log("giving user")
+    return new Promise(async function(resolve,reject){
+        chrome.storage.local.get(['userLocal'], async function (result) {
+            var userLocal = result.userLocal;
+            resolve(userLocal);
+        });
+    });
+}
+*/
+async function get_user(){
+    return new Promise(function (res, rej) {
+      chrome.storage.local.get(['userLocal'], async function (result) {
+          let userLocal = result.userLocal;
+          res(userLocal);
+      });
     });
 }
 
 function update_user(tmp_user){
+    console.log("updating user")
     chrome.storage.local.get(['userLocal'], async function (result) {
         var userLocal = tmp_user;
         chrome.storage.local.set({userLocal: userLocal}, function () {}); // save it in local.
-        return userLocal;
+        
     });  
 }
 
 
 function run_room_process(){
 
-    var user=get_user();
+    
 
     if (user.room_process[0]==false){
         user.room_process[0]=true;
@@ -538,7 +582,7 @@ function run_room_process(){
         //sending content script if user is host or not
         setTimeout(notify_content_info,1000);
         user.room_process[1]=setInterval(check_status,6000);
-        user=update_user(user);
+        
 
         user.connection.onmessage=function(event){
 
@@ -570,7 +614,7 @@ function run_room_process(){
 }
 
 function check_status(){
-    var user=get_user();
+
     //if user exited room
     if (user.room_process[0]==false){
 
@@ -585,7 +629,7 @@ function check_status(){
 
 function notify_content_info(){
 
-    var user=get_user();
+
 
     console.log("N I H ",user.room[4])
 
