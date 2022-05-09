@@ -50,16 +50,18 @@ chrome.storage.local.get(['userLocal'], async function (result) {
 });
 */
 
+var user
+
+
 //setting up user's info in local storage
 console.log("BLABLABLA")
 chrome.storage.local.get(['userLocal'], async function (result) {
     let ul = result.userLocal;
-    console.log("UserLocal ",ul)
     if (ul === undefined) {
         console.log("entering user")
         // it means there was nothing before. This way you don't overwrite
         // the user object every time the backgorund.js loads.
-        var user={
+        let user={
             connection:undefined,
             id:"id",
             username:"username",
@@ -71,10 +73,13 @@ chrome.storage.local.get(['userLocal'], async function (result) {
             }
         chrome.storage.local.set({userLocal: user}, function () {}); // save it in local.
     }
+    else{
+        console.log("rentering user")
+        user=ul;
+    }
 });
 
 
-var user
 
 
 
@@ -140,7 +145,7 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
             chrome.action.setPopup({popup: 'htmls/dif_popup.html'});
         }
 
-
+        update_user(user);
     }); 
 
 
@@ -190,7 +195,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, change, tab) {
         }
 
 
-
+        update_user(user);
     }
 
     
@@ -253,7 +258,7 @@ chrome.tabs.onRemoved.addListener (function(tabId) {
             user.room=["id","password","url","tabid"];
             user.room_members=[];
 
-            
+            update_user(user);
         }
     
     }
@@ -275,7 +280,7 @@ chrome.webNavigation.onCommitted.addListener(function(details) {
         clearInterval(user.room_process[1]);
         user.room_process[0]=false;
 
-        
+        update_user(user);
         
         run_room_process();
     }
@@ -353,6 +358,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
             user.room=["id","password","url","tabid"];
             user.room_members=[]
 
+            update_user(user);
             
             
         }
@@ -395,7 +401,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
                 user.in_room=true;
 
-                
+                update_user(user);
                 
                 chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
                 sendResponse("^");
@@ -431,7 +437,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
                     temp.splice(0,2);
                     user.room_members=temp;
 
-                    
+                    update_user(user);
                    
                     //console.log("eve data "+String(event.data))
                     sendResponse(String(event.data));
@@ -475,7 +481,7 @@ function connect(){
         let temp_u=data[1];
         user.username=temp_u;
         
-        
+        update_user(user);
 
         console.log("connection: ",user.id,",",user.username);
     };
@@ -526,7 +532,7 @@ function reconnect(){
             let temp_u=(event.data.split(','))[2]
             user.username=temp_u;
 
-            
+            update_user(user);
             
         }
         else{
