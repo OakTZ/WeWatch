@@ -39,8 +39,8 @@ chrome.runtime.sendMessage("in watching room", (response) => {
 });
 
 chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
-    let data=message.split(','); //w.r,new_u,u1,u2,u3,u4,u5
-    data.splice(0,2);
+    let data=message.split(','); //w.r,new_u,room_id,u1,u2,u3,u4,u5
+    data.splice(0,3);
     insert_members(data);
     /*
     for (u_name in data){

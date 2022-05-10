@@ -54,7 +54,6 @@ var user
 
 
 //setting up user's info in local storage
-console.log("BLABLABLA")
 chrome.storage.local.get(['userLocal'], async function (result) {
     let ul = result.userLocal;
     if (ul === undefined) {
@@ -74,7 +73,7 @@ chrome.storage.local.get(['userLocal'], async function (result) {
         chrome.storage.local.set({userLocal: user}, function () {}); // save it in local.
     }
     else{
-        console.log("rentering user")
+        console.log("rentering user");
         console.log("r_u ",ul);
         user=ul;
     }
@@ -96,17 +95,22 @@ chrome.runtime.onInstalled.addListener(async () => {
     console.log("u: ",user);
     
     //connect to server and recive id 
-    connect()
+    connect();
     
 });
 
-/*
+
 //WHEN BACKGROUND.JS IS ABOUT TO GO IDLE
 chrome.runtime.onSuspend.addListener(function (){
-    console.log("bruh")
+    if(user.in_room){
+        chrome.tabs.sendMessage(user.room[3],"close cjs",function(response){ //{command:"W?"}           
+        })
+        clearInterval(user.room_process[1]);
+        user.room_process[0]=false;
+    }
     update_user(user);//upload user before going idle
 });
-*/
+
 
 
 //WHEN THE ACTIVE TAB CHANGES CHROME
@@ -601,7 +605,7 @@ function run_room_process(){ //here I get content.js messages but  script when b
                 }
 
                 console.log("sending content.js"); //0-w.r,1-command,2-vid tl,3-UTC
-                chrome.tabs.sendMessage(user.room[3],msg,function(response){ //{command:"W?"}
+                chrome.tabs.sendMessage(user.room[3],msg,function(response){ //{command:"W?"}close cjs
                     
                 }) 
             }

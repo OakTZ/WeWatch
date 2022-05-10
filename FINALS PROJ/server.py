@@ -79,8 +79,9 @@ async def broadcast(msg):
     global rooms
 
     if "new_u" in msg:
-        #w.r,new_u,u1,u2,u3,u4,u5
-        for uId in (rooms[data[1]][1]):
+        data=msg.split(',')
+        #w.r,new_u,room_id,u1,u2,u3,u4,u5
+        for uId in (rooms[data[2]][1]):
             try:
                 await ids[uId].send(msg) 
             except Exception as e :
@@ -176,7 +177,7 @@ async def listen(websocket,path):
 
                             str_members=','.join(room_members[room_id])
                             print(f"sending all :{str_members}")
-                            broadcast(f"w.r,new_u,{str_members}")
+                            broadcast(f"w.r,new_u,{room_id},{str_members}")
 
                             rooms[room_id][1].append(soc_id)
 
