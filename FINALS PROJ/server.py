@@ -149,9 +149,9 @@ async def listen(websocket,path):
                         await websocket.send("reconnected you by id")
 
                     else:
+                        print("creating new id for:",data[1])
                         new_id=(create_new_id(websocket))
-                        u_name=create_new_username(soc_id)
-                        await websocket.send("new_id,"+new_id+","+u_name)
+                        await websocket.send("new_id,"+new_id)
 
                         #await websocket.send(soc_id)
 

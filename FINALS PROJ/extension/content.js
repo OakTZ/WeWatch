@@ -95,8 +95,9 @@ function process(){
     //VIDEO EVENTS
 
     video.onplaying=function(){//if user pressed play
+        console.log("cs- ",server_order,"&& ih- ",ishost);
         if (ishost && server_order==false){
-
+            console.log("sending onplaying");
             //letting know to server to play everyone in spesific timestamp
             chrome.runtime.sendMessage("watching_room,playing,"+video.currentTime, (response) => {
                     
@@ -104,8 +105,9 @@ function process(){
         }
     }
     video.onpause=function(){
+        console.log("cs- ",server_order,"&& ih- ",ishost);
         if (ishost && server_order==false){
-
+            console.log("sending onpause");
             //letting know to server to pause everyone in spesific timestamp
             chrome.runtime.sendMessage("watching_room,paused,"+video.currentTime, (response) => {
                     
@@ -113,7 +115,9 @@ function process(){
         }
     }
     video.ontimeupdate=function(){ 
+        console.log("cs- ",server_order,"&& ih- ",ishost);
         if (ishost && server_order==false){
+            console.log("sending ontimeupdate");
             //if user changed timeline
             if (Math.abs(video.currentTime-timeline)>1){
 

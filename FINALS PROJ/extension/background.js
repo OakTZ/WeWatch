@@ -75,6 +75,7 @@ chrome.storage.local.get(['userLocal'], async function (result) {
     }
     else{
         console.log("rentering user")
+        console.log("r_u ",ul);
         user=ul;
     }
 });
@@ -319,7 +320,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
     //in-room commands (if user is host)
     if (message.split(',')[0]=="watching_room" && user.in_room &&user.room[4]){
-
+        console.log("in here")
         data=message.split(',');
 
         if(data[1]=="playing"){
@@ -467,7 +468,7 @@ function connect(){
 
     
     
-    user.connection = new WebSocket('ws://192.168.3.16:8765'); //ws://localhost:8765
+    user.connection = new WebSocket('ws://10.30.56.204:8765'); //ws://localhost:8765
 
     user.connection.onopen = function(e) {
         user.connection.send("get_id");
@@ -511,26 +512,23 @@ function reconnect(){
 
 
 
-    console.log("reconnecting!!");
-    user.connection = new WebSocket('ws://192.168.3.16:8765');
+    user.connection = new WebSocket('ws:// 10.30.56.204:8765');
 
     
 
     user.connection.onopen = function(e) {
-        
+        console.log("sending: ",user.id)
         user.connection.send("reconnecting,"+user.id);
     };
 
     user.connection.onmessage=function(event){
 
+        console.log("got data ",event.data)
         if (String(event.data).includes("new id,")){
             console.log("getting new id...");
 
             let temp_i=(event.data.split(','))[1]
             user.id=temp_i;
-
-            let temp_u=(event.data.split(','))[2]
-            user.username=temp_u;
 
             update_user(user);
             
@@ -571,9 +569,8 @@ function update_user(tmp_user){
 }
 
 
-function run_room_process(){
+function run_room_process(){ //here I get content.js messages but  script when background closes the msgs disconnect
 
-    
 
     if (user.room_process[0]==false){
         user.room_process[0]=true;
@@ -590,7 +587,7 @@ function run_room_process(){
         user.room_process[1]=setInterval(check_status,6000);
         
 
-        user.connection.onmessage=function(event){
+        user.connection.onmessage=function(event){ //HERE
 
             var msg=String(event.data);
 
@@ -628,6 +625,7 @@ function check_status(){
         clearInterval(user.room_process[1]);
     }
     else{
+        user.connection.send("k.a")
         check_connection();   
     }     
   
