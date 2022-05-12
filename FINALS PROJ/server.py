@@ -143,15 +143,19 @@ async def listen(websocket,path):
                     data=message.split(',')
                     print(data)
                     check_id=data[1]
+                    username=data[2]
                     print("want to recconect:" ,data[1])
                     if check_id in ids:
                         print("OK")
                         ids[check_id]=websocket
+                        usernames[check_id]=username
                         await websocket.send("reconnected you by id")
 
                     else:
                         print("creating new id for:",data[1])
                         new_id=(create_new_id(websocket))
+                        ids[new_id]=websocket
+                        usernames[new_id]=username
                         await websocket.send("new_id,"+new_id)
 
                         #await websocket.send(soc_id)
@@ -177,7 +181,7 @@ async def listen(websocket,path):
 
                             str_members=','.join(room_members[room_id])
                             print(f"sending all :{str_members}")
-                            broadcast(f"w.r,new_u,{room_id},{str_members}")
+                            await broadcast(f"w.r,new_u,{room_id},{str_members}")
 
                             rooms[room_id][1].append(soc_id)
 
@@ -201,7 +205,10 @@ async def listen(websocket,path):
                     print(f"user: {soc_id} exited room {room_id}")
 
                     rooms[room_id][1].remove(soc_id)
+                    str_members=','.join(room_members[room_id])
                     room_members[room_id].remove(usernames[soc_id])
+
+                    await broadcast(f"w.r,left_u,{room_id},{str_members}")
 
                     #checks if room is empty
                     if not (rooms[room_id][1]):

@@ -39,8 +39,12 @@ chrome.runtime.sendMessage("in watching room", (response) => {
 });
 
 chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
+    console.log("got new user");
+
     let data=message.split(','); //w.r,new_u,room_id,u1,u2,u3,u4,u5
+    console.log("before splic: ",data)
     data.splice(0,3);
+    console.log("after: ",data)
     insert_members(data);
     /*
     for (u_name in data){
@@ -64,11 +68,13 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
         index=index+1;
     }
     */
+   sendResponse();
 
 });
 
 
 function insert_members(data){
+    console.log("inseting members")
     let index=1;
     for (const u_name of data){
         

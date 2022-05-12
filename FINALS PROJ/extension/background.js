@@ -472,7 +472,7 @@ function connect(){
 
     
     
-    user.connection = new WebSocket('ws://10.30.56.204:8765'); //ws://localhost:8765
+    user.connection = new WebSocket('ws://localhost:8765'); //ws:// 10.30.56.204:8765
 
     user.connection.onopen = function(e) {
         user.connection.send("get_id");
@@ -516,13 +516,13 @@ function reconnect(){
 
 
 
-    user.connection = new WebSocket('ws:// 10.30.56.204:8765');
+    user.connection = new WebSocket('ws://localhost:8765 ');
 
     
 
     user.connection.onopen = function(e) {
         console.log("sending: ",user.id)
-        user.connection.send("reconnecting,"+user.id);
+        user.connection.send("reconnecting,"+user.id+","+user.username);
     };
 
     user.connection.onmessage=function(event){
@@ -601,13 +601,30 @@ function run_room_process(){ //here I get content.js messages but  script when b
 
                 if (msg.includes("new_u")){
                     console.log("new member has joined")
-                    chrome.runtime.sendMessage(msg)
-                }
-
-                console.log("sending content.js"); //0-w.r,1-command,2-vid tl,3-UTC
-                chrome.tabs.sendMessage(user.room[3],msg,function(response){ //{command:"W?"}close cjs
+                    msg=msg.split(','); //w.r,new_u,room_id,u1,u2,u3,u4,u5
+                    msg.splice(0,3);
+                    user.room_members=msg;
+                    console.log("members: ",user.room_members)
+                    chrome.tabs.sendMessage(user.room[3],user.room_members,function(response){ //{command:"W?"}close cjs
                     
-                }) 
+                    }) 
+                }
+                else if (msg.includes("left_u")){
+                    console.log("member has left")
+                    msg=msg.split(','); //w.r,left_u,room_id,u1,u2,u3,u4,u5
+                    msg.splice(0,3);
+                    user.room_members=msg;
+                    console.log("members: ",user.room_members)
+                    chrome.tabs.sendMessage(user.room[3],user.room_members,function(response){ //{command:"W?"}close cjs
+                    
+                    }) 
+                }
+                else{
+                    console.log("sending content.js"); //0-w.r,1-command,2-vid tl,3-UTC
+                    chrome.tabs.sendMessage(user.room[3],msg,function(response){ //{command:"W?"}close cjs
+                        
+                    }) 
+                }
             }
             
         }
