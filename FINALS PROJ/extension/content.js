@@ -48,9 +48,14 @@ function process(){
 
             return true; //stopping message port closing
         }
+        /*
         else if(message=="close cjs"){
             console.log("going idle")
             window.close();
+        }
+        */
+        else if(message=="k.a"){
+           sendResponce("^");
         }
         
         else{

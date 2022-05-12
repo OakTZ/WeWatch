@@ -102,12 +102,14 @@ chrome.runtime.onInstalled.addListener(async () => {
 
 //WHEN BACKGROUND.JS IS ABOUT TO GO IDLE
 chrome.runtime.onSuspend.addListener(function (){
+    /*
     if(user.in_room){
         chrome.tabs.sendMessage(user.room[3],"close cjs",function(response){ //{command:"W?"}           
         })
         clearInterval(user.room_process[1]);
         user.room_process[0]=false;
     }
+    */
     update_user(user);//upload user before going idle
 });
 
@@ -588,7 +590,7 @@ function run_room_process(){ //here I get content.js messages but  script when b
         );
         //sending content script if user is host or not
         setTimeout(notify_content_info,1000);
-        user.room_process[1]=setInterval(check_status,6000);
+        user.room_process[1]=setInterval(check_status,4500);
         
 
         user.connection.onmessage=function(event){ //HERE
@@ -605,7 +607,7 @@ function run_room_process(){ //here I get content.js messages but  script when b
                     msg.splice(0,3);
                     user.room_members=msg;
                     console.log("members: ",user.room_members)
-                    chrome.tabs.sendMessage(user.room[3],user.room_members,function(response){ //{command:"W?"}close cjs
+                    chrome.tabs.sendMessage(user.room[3],user.room_members,function(response){ //{command:"W?"}
                     
                     }) 
                 }
@@ -615,13 +617,13 @@ function run_room_process(){ //here I get content.js messages but  script when b
                     msg.splice(0,3);
                     user.room_members=msg;
                     console.log("members: ",user.room_members)
-                    chrome.tabs.sendMessage(user.room[3],user.room_members,function(response){ //{command:"W?"}close cjs
+                    chrome.tabs.sendMessage(user.room[3],user.room_members,function(response){ //{command:"W?"}
                     
                     }) 
                 }
                 else{
                     console.log("sending content.js"); //0-w.r,1-command,2-vid tl,3-UTC
-                    chrome.tabs.sendMessage(user.room[3],msg,function(response){ //{command:"W?"}close cjs
+                    chrome.tabs.sendMessage(user.room[3],msg,function(response){ //{command:"W?"}
                         
                     }) 
                 }
@@ -646,9 +648,12 @@ function check_status(){
         clearInterval(user.room_process[1]);
     }
     else{
-        user.connection.send("k.a")
-        check_connection();   
-    }     
+        user.connection.send("k.a") // keep alive the connection bewtween client and server
+        chrome.tabs.sendMessage(user.room[3],"k.a",function(response){ //{command:"W?"}close cjs
+                        
+        }) ;
+    }
+       
   
 }
 
