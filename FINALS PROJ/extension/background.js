@@ -649,8 +649,7 @@ function check_status(){
     }
     else{
         user.connection.send("k.a") // keep alive the connection bewtween client and server
-        chrome.tabs.sendMessage(user.room[3],"k.a",function(response){ //{command:"W?"}close cjs
-                        
+        chrome.tabs.sendMessage(user.room[3],"k.a",function(response){ //keep alive the background.js
         }) ;
     }
        

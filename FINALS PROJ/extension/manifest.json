@@ -2,6 +2,12 @@
     "name": "WeWatch",
     "version": "1.0",
     "manifest_version": 3,
+    "icons":{
+      "16":"pics/LOGO.png",
+      "32":"pics/LOGO.png",
+      "48":"pics/LOGO.png",
+      "128":"pics/LOGO.png"
+    },
     "permissions": [ 
       "tabs",
       "scripting",
@@ -23,9 +29,10 @@
     },
     "action":{
       "default_icon":{
-        "16":"pics/logo.png",
-        "48":"pics/logo.png",
-        "128":"pics/logo.png"  
+        "16":"pics/LOGO.png",
+        "32":"pics/LOGO.png",
+        "48":"pics/LOGO.png",
+        "128":"pics/LOGO.png"  
       },
       "default_popup": "htmls/dif_popup.html",
       "default_title": "WeWatch$"
