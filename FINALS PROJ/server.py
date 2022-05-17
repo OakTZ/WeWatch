@@ -79,15 +79,25 @@ async def broadcast(msg):
     global rooms
 
     if "new_u" in msg:
-        data=msg.split(',')
-        #w.r,new_u,room_id,u1,u2,u3,u4,u5
+
+        data=msg.split(',') #w.r,new_u,room_id,u1,u2,u3,u4,u5
         for uId in (rooms[data[2]][1]):
             try:
                 await ids[uId].send(msg) 
             except Exception as e :
                 print("exe:")
                 print(e)
-    #need to add left_u    
+
+    elif "left_u" in msg:
+
+        data=msg.split(',') #w.r,left_u,room_id,u1
+        for uId in (rooms[data[2]][1]):
+            try:
+                await ids[uId].send(msg) 
+            except Exception as e :
+                print("exe:")
+                print(e)
+    
     else:
         data=msg.split(',') #0-w.r,1-room id,2-user id,3-command,4-vid tl
         rooms[data[1]][0][2]=data[4]#setting current time in watching room
@@ -208,7 +218,7 @@ async def listen(websocket,path):
                     str_members=','.join(room_members[room_id])
                     room_members[room_id].remove(usernames[soc_id])
 
-                    await broadcast(f"w.r,left_u,{room_id},{str_members}")
+                    await broadcast(f"w.r,left_u,{room_id},{str_members}") #w.r,left_u,room_id,u1
 
                     #checks if room is empty
                     if not (rooms[room_id][1]):

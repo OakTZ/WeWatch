@@ -73,7 +73,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 });
 
 
-function insert_members(data){
+function insert_members(data){ //need to figure out how to delete elemnts when someone left
     console.log("inseting members")
     let index=1;
     for (const u_name of data){
@@ -94,6 +94,15 @@ function insert_members(data){
             element.appendChild(para);
 
         }
+        index=index+1;
+    }
+
+    //cleanup not-used elements
+    while (true){
+        if(document.getElementById(index.toString())){
+            document.getElementById(index.toString()).remove();
+        }
+        else{break;}
         index=index+1;
     }
 }

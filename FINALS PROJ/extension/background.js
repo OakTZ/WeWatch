@@ -50,7 +50,6 @@ chrome.storage.local.get(['userLocal'], async function (result) {
 });
 */
 
-var pro
 var user
 
 
@@ -79,6 +78,7 @@ chrome.storage.local.get(['userLocal'], async function (result) {
         console.log("rentering user");
         console.log("r_u ",ul);
         user=ul;
+        reconnect();
     }
 });
 
@@ -258,11 +258,8 @@ chrome.tabs.onRemoved.addListener (function(tabId) {
             console.log("OnRemoved - user went out of watching room");
             user.room_process[0]=false;
 
-            
-
-
-            check_connection();
-            user.connection.send("exit_room,"+user.room[0]+","+user.id);
+        
+            send_message("exit_room,"+user.room[0]+","+user.id)
 
             user.in_room=false;
             user.room=["id","password","url","tabid"];
@@ -335,22 +332,22 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
         if(data[1]=="playing"){
             console.log("PLAYING");
 
-            check_connection();
-            user.connection.send("w.r,"+user.room[0]+","+user.id+",play,"+data[2]); //0-w.r,1-room id,2-user id,3-command,4-vid tl
+            
+            send_message("w.r,"+user.room[0]+","+user.id+",play,"+data[2]); //0-w.r,1-room id,2-user id,3-command,4-vid tl
         }
 
         else if(data[1]=="paused"){
             console.log("PAUSED");
 
-            check_connection();
-            user.connection.send("w.r,"+user.room[0]+","+user.id+",pause,"+data[2]);
+            
+            send_message("w.r,"+user.room[0]+","+user.id+",pause,"+data[2]);
         }
 
         else if (data[1]=="move tl"){
             console.log("MOVED TL");
 
-            check_connection();
-            user.connection.send("w.r,"+user.room[0]+","+user.id+",move tl,"+data[2]);
+            
+            send_message("w.r,"+user.room[0]+","+user.id+",move tl,"+data[2]);
         }
 
         else if (data[1]=="exited"){
@@ -359,10 +356,8 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
             user.room_process[0]=false;
             
-
-            check_connection();
             console.log("OnContentScript - user went out of watching room");
-            user.connection.send("exit_room,"+user.room[0]+","+user.id);
+            send_message("exit_room,"+user.room[0]+","+user.id);
 
             user.in_room=false;
             user.room=["id","password","url","tabid"];
@@ -399,8 +394,8 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
         //create new watching room
         else if (message == 'create new watching room') { //need to exit old one when created new one
 
-            check_connection();
-            user.connection.send("create_room,"+user.current_tab[0]+","+user.id);
+            
+            send_message("create_room,"+user.current_tab[0]+","+user.id);
 
             user.connection.onmessage=function(event){
                 var data=event.data;
@@ -436,8 +431,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
             var msg=message.split(',');
 
             //console.log("JOINING ROOM,"+data[1]+","+data[2])
-            check_connection();
-            user.connection.send("join_room,"+msg[1]+","+msg[2]+","+user.id);
+            send_message("join_room,"+msg[1]+","+msg[2]+","+user.id);
 
             user.connection.onmessage=function(event){
                 let data=event.data.split(',');
@@ -504,31 +498,36 @@ function connect(){
        
 }
 
+function send_message(msg){
+    check_connection().then((message)=>{
+        user.connection.send(msg);
+    }).catch((error)=>{
+        reconnect();
+        user.connection.send(msg);
+    }); 
+}
+
 function check_connection(){
+    return new Promise((resolve,reject)=>{
 
-
-
-    console.log(user.id);
-    if (user.connection==null){
-        reconnect();
-        
-    }
-    else if (user.connection.readyState != 1 ){
-        reconnect();
-    }
-    else{
-        console.log("connection is still open");
-    }
-
+        if (user.connection==null){
+            reject("recconecting")
+            
+        }
+        else if (user.connection.readyState != 1 ){
+            reject("recconecting")
+        }
+        else{
+            resolve("connection is still open");
+        }
+    });
 }
 
 function reconnect(){
 
 
-
     user.connection = new WebSocket('ws://localhost:8765 ');
 
-    
 
     user.connection.onopen = function(e) {
         console.log("sending: ",user.id)
@@ -614,19 +613,27 @@ function run_room_process(){ //here I get content.js messages but  script when b
 
                 if (msg.includes("new_u")){
                     console.log("new member has joined")
+
                     msg=msg.split(','); //w.r,new_u,room_id,u1,u2,u3,u4,u5
                     msg.splice(0,3);
                     user.room_members=msg;
                     console.log("members: ",user.room_members)
+
                     chrome.tabs.sendMessage(user.room[3],user.room_members,function(response){ //{command:"W?"}
                     
                     }) 
                 }
                 else if (msg.includes("left_u")){
                     console.log("member has left")
-                    msg=msg.split(','); //w.r,left_u,room_id,u1,u2,u3,u4,u5
+
+                    msg=msg.split(','); //w.r,left_u,room_id,u1
                     msg.splice(0,3);
-                    user.room_members=msg;
+                    left_u=msg[0];
+
+                    index=user.room_members.indexOf(left_u);
+                    user.room_members.splice(index,1);
+
+                    console.log("left member: ",msg)
                     console.log("members: ",user.room_members)
                     chrome.tabs.sendMessage(user.room[3],user.room_members,function(response){ //{command:"W?"}
                     

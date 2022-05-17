@@ -1,17 +1,17 @@
 var username
 
+chrome.runtime.sendMessage("username", (response) => {
+
+    let temp=response;  
+    username=temp;
+    console.log("popups got username: ",username);
+    
+    document.getElementById("username").innerHTML=username;
+
+    
+});
+
 window.onload=function(){
-
-    chrome.runtime.sendMessage("username", (response) => {
-
-        let temp=response;  
-        username=temp;
-        console.log("popups got username: ",username);
-        
-        document.getElementById("username").innerHTML=username;
-
-        
-    });
 
     //CREATE ROOM
     if (document.getElementById("createRoom")){
