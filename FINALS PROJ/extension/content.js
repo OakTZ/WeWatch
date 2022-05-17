@@ -28,9 +28,10 @@ else document.addEventListener('DOMContentLoaded',process)
 
 function process(){
 
+    //video elemnet
     video = document.querySelector('video');
 
-
+    // controls elemnts
     playButton=document.getElementsByClassName("ytp-play-button ytp-button")[0]
     bar=document.getElementsByClassName("ytp-progress-bar-container")[0]
 
@@ -38,7 +39,6 @@ function process(){
 
 
     //ON MESSAGE FROM background.js
-
     chrome.runtime.onMessage.addListener(function(message,sender,sendResponce){
 
         console.log("msg",message);
@@ -90,7 +90,7 @@ function process(){
 
 
     
-    //disable controls for non-host users
+    //Disable controls for non-host users
     window.addEventListener('click', event => {
         if (event.target.matches('video')) {
             if(!ishost){
@@ -138,27 +138,10 @@ function process(){
 
             timeline=video.currentTime;
         }
-        /*
-        else if (!ishost){ // need to figure out problem
-            video.currentTime=timeline;
-        }
-        */
 
     }
 
 
-    //WINDOW EVENTS
-    /*
-    window.onbeforeunload=function(){
-
-        if()
-        console.log("exiting content.js")
-        chrome.runtime.sendMessage("watching_room,exited", (response) => {
-                    
-        });
-    }
-    */
-    
 
     //AD BLOCKER 
     let observer = new MutationObserver(mutations => { //every time a change is happend in the DOM
@@ -182,34 +165,23 @@ function process(){
         }
         
     });
-
     observer.observe(document, { childList: true, subtree: true });
 
-    //setInterval(check_for_ad,500);
 
-    
+
+
+
+    //disable/enable control for user
     setInterval(disablecontrol,1000);
     
-
+    //check if room is still open
     setInterval(is_open,1000);
-     
-
+    
+    //keep background.js alive
+    setInterval(keep_bg_alive,295e3)//5min-5sec
 }
 
 
-
-//AD BLOCKER
-function check_for_ad(){
-
-    var skipButton=document.getElementsByClassName("ytp-ad-skip-button");
-
-    //checking if skip button is present
-    if(skipButton!=undefined && skipButton.length>0){
-
-        console.log("AD DETECTED");
-        skipButton[0].click();
-    }
-}
 
 
 // DISABLE/ENBALE CONTROLS FOR USERS
@@ -238,6 +210,14 @@ function is_open(){
         });
         window.close()
     }
+}
+
+
+//KEEP BG ALIVE WHILE IN ROOM
+function keep_bg_alive(){
+    chrome.runtime.sendMessage("k.a", (response) => {
+                    
+    });
 }
 
 // *****HELPING FUNCTIONS*****

@@ -50,6 +50,7 @@ chrome.storage.local.get(['userLocal'], async function (result) {
 });
 */
 
+var pro
 var user
 
 
@@ -60,7 +61,7 @@ chrome.storage.local.get(['userLocal'], async function (result) {
         console.log("entering user")
         // it means there was nothing before. This way you don't overwrite
         // the user object every time the backgorund.js loads.
-        let user={
+        let ul={
             connection:undefined,
             id:"id",
             username:"username",
@@ -69,8 +70,10 @@ chrome.storage.local.get(['userLocal'], async function (result) {
             in_room:false,
             room_process:[false,"intervelId"],
             current_tab:["url","id"]
-            }
-        chrome.storage.local.set({userLocal: user}, function () {}); // save it in local.
+        }
+        user=ul;
+        await chrome.storage.local.set({userLocal: ul}, function () {}); // save it in local.
+        await connect();
     }
     else{
         console.log("rentering user");
@@ -84,18 +87,18 @@ chrome.storage.local.get(['userLocal'], async function (result) {
 
 
 //WHEN THE EXTENTION IS BEING INSTALLED
-chrome.runtime.onInstalled.addListener(async () => {
+chrome.runtime.onInstalled.addListener(async() => { //async
     //opens welcome page
     let url = chrome.runtime.getURL("htmls/hello.html");
 
     let tab = await chrome.tabs.create({ url });
 
     
-    user= await get_user();
-    console.log("u: ",user);
+    //await get_user().then(connect());
+    //console.log("u: ",u);
     
     //connect to server and recive id 
-    connect();
+    //connect();
     
 });
 
@@ -325,7 +328,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
 
     //in-room commands (if user is host)
-    if (message.split(',')[0]=="watching_room" && user.in_room &&user.room[4]){
+    if (message.split(',')[0]=="watching_room"){ //&& user.in_room &&user.room[4]
         console.log("in here")
         data=message.split(',');
 
@@ -371,7 +374,14 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
         }
     }
 
-    //everything else
+    //k.a bg.js
+    else if(message=="k.a"){
+        sendResponse("^");
+        //chrome.tabs.sendMessage(user.room[3],"k.a",function(response){ 
+        //}) 
+    }
+
+    //popup messages
     else{
     
         //notify that the user in watching room
@@ -472,8 +482,6 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
 function connect(){
 
-    
-    
     user.connection = new WebSocket('ws://localhost:8765'); //ws:// 10.30.56.204:8765
 
     user.connection.onopen = function(e) {
@@ -556,13 +564,14 @@ async function get_user(){
     });
 }
 */
-async function get_user(){
+function get_user(){
     return new Promise(function (res, rej) {
-      chrome.storage.local.get(['userLocal'], async function (result) {
+        chrome.storage.local.get(['userLocal'],function (result) {
           let userLocal = result.userLocal;
           res(userLocal);
-      });
-    });
+        });
+    })
+
 }
 
 function update_user(tmp_user){
@@ -590,9 +599,11 @@ function run_room_process(){ //here I get content.js messages but  script when b
         );
         //sending content script if user is host or not
         setTimeout(notify_content_info,1000);
-        user.room_process[1]=setInterval(check_status,4500);
-        
 
+        //check room status
+        user.room_process[1]=setInterval(check_status,5000);
+        
+        //server video commands
         user.connection.onmessage=function(event){ //HERE
 
             var msg=String(event.data);
@@ -630,6 +641,9 @@ function run_room_process(){ //here I get content.js messages but  script when b
             }
             
         }
+
+
+
     }
     else{
         console.log("nope");
@@ -648,7 +662,7 @@ function check_status(){
         clearInterval(user.room_process[1]);
     }
     else{
-        user.connection.send("k.a") // keep alive the connection bewtween client and server
+        user.connection.send("k.a"); // keep alive the connection bewtween client and server
         chrome.tabs.sendMessage(user.room[3],"k.a",function(response){ //keep alive the background.js
         }) ;
     }

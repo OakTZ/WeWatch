@@ -87,7 +87,7 @@ async def broadcast(msg):
             except Exception as e :
                 print("exe:")
                 print(e)
-        
+    #need to add left_u    
     else:
         data=msg.split(',') #0-w.r,1-room id,2-user id,3-command,4-vid tl
         rooms[data[1]][0][2]=data[4]#setting current time in watching room
