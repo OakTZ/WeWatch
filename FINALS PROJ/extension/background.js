@@ -78,7 +78,53 @@ chrome.storage.local.get(['userLocal'], async function (result) {
         console.log("rentering user");
         console.log("r_u ",ul);
         user=ul;
-        reconnect();
+
+        //change popup accordingly
+        chrome.tabs.query({currentWindow: true, active: true}, function(tabs){
+            let current_tab_id=tabs[0].id;
+
+            chrome.tabs.get(current_tab_id, function(tab){
+                var u = tab.url;
+        
+                user.current_tab[0]=u;
+                user.current_tab[1]=tab.id;
+        
+                if(u==user.room[2] && user.in_room && (user.current_tab[1]==user.room[3] || user.room[3]=="tabid")){
+        
+                    chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
+                    user.room[3]=tab.id;
+        
+                    run_room_process(false);
+                }
+
+                else if(String(u).includes("https://www.youtube.com/watch")){
+        
+                    chrome.action.setPopup({popup: 'htmls/watching_popup.html'});
+                    user.current_tab[0]=u;
+                }
+
+                else{
+                    chrome.action.setPopup({popup: 'htmls/dif_popup.html'});
+                }
+        
+                update_user(user);
+            }); 
+
+        });
+
+
+        
+        //reconfiguring connection with content.js
+        if(user.in_room){
+            console.log("reconfiguring connection with content.js");
+
+            clearInterval(user.room_process[1]);
+            user.room_process[0]=false;
+
+            update_user(user);
+            
+            run_room_process(true);
+        }
     }
 });
 
@@ -105,14 +151,6 @@ chrome.runtime.onInstalled.addListener(async() => { //async
 
 //WHEN BACKGROUND.JS IS ABOUT TO GO IDLE
 chrome.runtime.onSuspend.addListener(function (){
-    /*
-    if(user.in_room){
-        chrome.tabs.sendMessage(user.room[3],"close cjs",function(response){ //{command:"W?"}           
-        })
-        clearInterval(user.room_process[1]);
-        user.room_process[0]=false;
-    }
-    */
     update_user(user);//upload user before going idle
 });
 
@@ -139,7 +177,7 @@ chrome.tabs.onActivated.addListener( function(activeInfo){
             
 
             console.log("onActivated did it")
-            run_room_process();
+            run_room_process(false);
         }
         else if(String(u).includes("https://www.youtube.com/watch")){
 
@@ -186,7 +224,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, change, tab) {
             
 
             //console.log("onUpdated did it, room[3]: "+room[3])
-            run_room_process();
+            run_room_process(false);
         }
         else if(String(change.url).includes("https://www.youtube.com/watch")){
 
@@ -289,7 +327,7 @@ chrome.webNavigation.onCommitted.addListener(function(details) {
 
         update_user(user);
         
-        run_room_process();
+        run_room_process(false);
     }
         
     
@@ -418,7 +456,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
                 chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
                 sendResponse("^");
 
-                run_room_process();
+                run_room_process(false);
 
 
             }
@@ -528,7 +566,28 @@ function reconnect(){
 
     user.connection = new WebSocket('ws://localhost:8765 ');
 
+    user.connection.addEventListener("open",h1)
+    function h1(){
+        user.connection.send("reconnecting,"+user.id+","+user.username);
+        user.connection.removeEventListener("open",h1)
+    }
+    user.connection.addEventListener("message",h2())
 
+    function h2(event){
+        console.log("got data ",event.data)
+        if (String(event.data).includes("new id,")){
+            console.log("getting new id...");
+
+            let temp_i=(event.data.split(','))[1]
+            user.id=temp_i;
+
+            update_user(user);
+            
+            user.connection.removeEventListener("message",h2)
+        }
+    }
+
+    /*
     user.connection.onopen = function(e) {
         console.log("sending: ",user.id)
         user.connection.send("reconnecting,"+user.id+","+user.username);
@@ -551,6 +610,7 @@ function reconnect(){
         }
 
     };
+    */
 }
 /*
 async function get_user(){
@@ -583,25 +643,30 @@ function update_user(tmp_user){
 }
 
 
-function run_room_process(){ //here I get content.js messages but  script when background closes the msgs disconnect
+function run_room_process(is_open){ //here I get content.js messages but  script when background closes the msgs disconnect
 
 
     if (user.room_process[0]==false){
         user.room_process[0]=true;
-        const tabId=parseInt(user.room[3]);
-        chrome.scripting.executeScript(
-            {
-            target:{tabId: tabId}, 
-            files:["content.js"],
-            }
-            
-        );
+
+        if(!is_open){
+            const tabId=parseInt(user.room[3]);
+            chrome.scripting.executeScript(
+                {
+                target:{tabId: tabId}, 
+                files:["content.js"],
+                }
+                
+            );
+        }
+
         //sending content script if user is host or not
         setTimeout(notify_content_info,1000);
 
         //check room status
         user.room_process[1]=setInterval(check_status,5000);
-        
+
+        update_user(user);
         //server video commands
         user.connection.onmessage=function(event){ //HERE
 
@@ -639,6 +704,11 @@ function run_room_process(){ //here I get content.js messages but  script when b
                     
                     }) 
                 }
+                else if(msg.includes("host")){
+                    user.room[4]=true;
+                    update_user(user);
+                    notify_content_info();
+                }
                 else{
                     console.log("sending content.js"); //0-w.r,1-command,2-vid tl,3-UTC
                     chrome.tabs.sendMessage(user.room[3],msg,function(response){ //{command:"W?"}
@@ -669,7 +739,7 @@ function check_status(){
         clearInterval(user.room_process[1]);
     }
     else{
-        user.connection.send("k.a"); // keep alive the connection bewtween client and server
+        send_message("k.a"); // keep alive the connection bewtween client and server
         chrome.tabs.sendMessage(user.room[3],"k.a",function(response){ //keep alive the background.js
         }) ;
     }

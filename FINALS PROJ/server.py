@@ -142,30 +142,30 @@ async def listen(websocket,path):
 
                 if (message=="get_id"):
 
-                    print("NEW USER HAS JOINED")
                     soc_id=(create_new_id(websocket))
                     u_name=create_new_username(soc_id)
-                    print(ids)
-                    print(usernames)
+                    print(F"NEW USER: {soc_id} - {u_name}")
                     await websocket.send(soc_id+","+u_name)
 
                 elif("reconnecting" in message):
+
                     data=message.split(',')
                     print(data)
                     check_id=data[1]
                     username=data[2]
-                    print("want to recconect:" ,data[1])
+                    print(f"{data[1]} wants to recconect")
                     if check_id in ids:
                         print("OK")
                         ids[check_id]=websocket
                         usernames[check_id]=username
+                        print(f"reconnecting {data[1]} by id")
                         await websocket.send("reconnected you by id")
 
                     else:
-                        print("creating new id for:",data[1])
                         new_id=(create_new_id(websocket))
                         ids[new_id]=websocket
                         usernames[new_id]=username
+                        print(f"gave {data[1]} new id -> {new_id}")
                         await websocket.send("new_id,"+new_id)
 
                         #await websocket.send(soc_id)
@@ -176,7 +176,7 @@ async def listen(websocket,path):
                     url=data[1]
                     soc_id=data[-1]
                     room_id=create_new_room(soc_id,url)
-                    print(rooms)
+                    print(f"room {room_id} was created by {soc_id}")
                     await websocket.send(room_id+","+rooms[room_id][0][0]+","+rooms[room_id][0][1]) #id,password
                 
                 if ("join_room," in message):
@@ -187,10 +187,10 @@ async def listen(websocket,path):
                     try:
                         if (rooms[room_id][0][0]==room_password):
                             
+                            print(f"{soc_id} has joined room {room_id}")
                             room_members[room_id].append(usernames[soc_id])
 
                             str_members=','.join(room_members[room_id])
-                            print(f"sending all :{str_members}")
                             await broadcast(f"w.r,new_u,{room_id},{str_members}")
 
                             rooms[room_id][1].append(soc_id)
@@ -213,6 +213,7 @@ async def listen(websocket,path):
                     soc_id=data[-1]
 
                     print(f"user: {soc_id} exited room {room_id}")
+                        
 
                     rooms[room_id][1].remove(soc_id)
                     str_members=','.join(room_members[room_id])
@@ -226,6 +227,11 @@ async def listen(websocket,path):
 
                         #delete room
                         del rooms[room_id]
+                    else:
+                        if (rooms[room_id][1].index(soc_id)==0):
+                            nxt_host=rooms[room_id][1][1]
+                            print(f"assigning new host to room {room_id}")
+                            await ids[nxt_host].send("host")
 
                     print(rooms)
                     

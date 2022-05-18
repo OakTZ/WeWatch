@@ -3,6 +3,8 @@
 
 //boolean to not lets
 
+var run
+
 var video
 var vidUrl
 
@@ -48,12 +50,11 @@ function process(){
 
             return true; //stopping message port closing
         }
-        /*
+        
         else if(message=="close cjs"){
-            console.log("going idle")
-            window.close();
+            throw new Error("closing script");
         }
-        */
+        
         else if(message=="k.a"){
            sendResponce("^");
         }
@@ -215,6 +216,7 @@ function is_open(){
 
 //KEEP BG ALIVE WHILE IN ROOM
 function keep_bg_alive(){
+    console.log("k.a")
     chrome.runtime.sendMessage("k.a", (response) => {
                     
     });
