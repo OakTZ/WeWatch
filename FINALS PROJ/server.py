@@ -215,12 +215,6 @@ async def listen(websocket,path):
                     print(f"user: {soc_id} exited room {room_id}")
                         
 
-                    rooms[room_id][1].remove(soc_id)
-                    str_members=','.join(room_members[room_id])
-                    room_members[room_id].remove(usernames[soc_id])
-
-                    await broadcast(f"w.r,left_u,{room_id},{str_members}") #w.r,left_u,room_id,u1
-
                     #checks if room is empty
                     if not (rooms[room_id][1]):
                         # need to delete room id and password from used combs
@@ -233,6 +227,11 @@ async def listen(websocket,path):
                             print(f"assigning new host to room {room_id}")
                             await ids[nxt_host].send("host")
 
+                    rooms[room_id][1].remove(soc_id)
+                    str_members=','.join(room_members[room_id])
+                    room_members[room_id].remove(usernames[soc_id])
+
+                    await broadcast(f"w.r,left_u,{room_id},{str_members}") #w.r,left_u,room_id,u1
                     print(rooms)
                     
                 else:
@@ -244,7 +243,7 @@ async def listen(websocket,path):
         print("A CLIENT HAS DISSCONECTED")
 
 
-start_server = websockets.serve(listen, "0.0.0.0", 8765)
+start_server = websockets.serve(listen, "0.0.0.0", 8765) 
 
 print("WebSockets echo server starting") #FLUSH=TRUE
 asyncio.get_event_loop().run_until_complete(start_server)
