@@ -410,8 +410,8 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
     //k.a bg.js
     else if(message=="k.a"){
         sendResponse("^");
-        //chrome.tabs.sendMessage(user.room[3],"k.a",function(response){ 
-        //}) 
+        chrome.tabs.sendMessage(user.room[3],"k.a",function(response){ 
+        }); 
     }
 
     //popup messages
@@ -434,7 +434,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
             
             send_message("create_room,"+user.current_tab[0]+","+user.id);
-
+            /*
             user.connection.onmessage=function(event){
                 var data=event.data;
                 data=data.split(',')
@@ -460,6 +460,37 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
 
             }
+            */
+
+            user.connection.addEventListener("message",h2())
+
+            function h2(event){
+                var data=event.data;
+                data=data.split(',')
+                user.room[0]=data[0];
+                user.room[1]=data[1];
+                user.room[2]=data[2];
+                user.room[3]=user.current_tab[1];
+                user.room[4]=true;
+
+
+                //need to add username list here 
+                user.room_members.push(user.username)
+                console.log(user.room_members)
+
+                user.in_room=true;
+
+                update_user(user);
+                
+                chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
+                sendResponse("^");
+
+                run_room_process(false);
+        
+                user.connection.removeEventListener("message",h2)
+                
+            }
+            
             
             
         }
@@ -470,7 +501,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
             //console.log("JOINING ROOM,"+data[1]+","+data[2])
             send_message("join_room,"+msg[1]+","+msg[2]+","+user.id);
-
+            /*
             user.connection.onmessage=function(event){
                 let data=event.data.split(',');
                 //data=data.split(',');
@@ -499,6 +530,38 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
                 
                 
             }
+            */
+            user.connection.addEventListener("message",h2())
+
+            function h2(event){
+                let data=event.data.split(',');
+                //data=data.split(',');
+                if(data[0]=="TRUE"){
+            
+                    user.room[0]=msg[1];
+                    user.room[1]=msg[2];
+                    user.room[2]=data[1];
+                    user.room[4]=false;
+                    user.in_room=true;
+                    let temp=data;
+
+                    temp.splice(0,2);
+                    user.room_members=temp;
+
+                    update_user(user);
+                   
+                    //console.log("eve data "+String(event.data))
+                    sendResponse(String(event.data));
+
+                    
+                }
+                else{
+                    sendResponse("false id or password");
+                }
+        
+                user.connection.removeEventListener("message",h2)
+                
+            }
     
         }
 
@@ -514,8 +577,9 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
 function connect(){
 
-    user.connection = new WebSocket('ws://localhost:8765'); //ws:// 10.30.56.204:8765
+    user.connection = new WebSocket('ws://localhost:8765'); //ws:// 10.30.56.240:8765 
 
+    /*
     user.connection.onopen = function(e) {
         user.connection.send("get_id");
     };
@@ -533,7 +597,33 @@ function connect(){
         console.log("connection: ",user.id,",",user.username);
     };
     //setInterval(keep_alive,10000)
-       
+    */
+     
+    
+
+    user.connection.addEventListener("open",h1)
+    function h1(){
+        user.connection.send("get_id");
+        user.connection.removeEventListener("open",h1)
+    }
+
+    user.connection.addEventListener("message",h2())
+
+    function h2(event){
+        let data=event.data.split(',');
+        
+        let temp_i=data[0];
+        user.id=temp_i;
+
+        let temp_u=data[1];
+        user.username=temp_u;
+
+        update_user(user);
+        console.log("connection: ",user.id,",",user.username);
+
+        user.connection.removeEventListener("message",h2)
+        
+    }
 }
 
 function send_message(msg){
@@ -571,8 +661,8 @@ function reconnect(){
         user.connection.send("reconnecting,"+user.id+","+user.username);
         user.connection.removeEventListener("open",h1)
     }
-    user.connection.addEventListener("message",h2())
 
+    user.connection.addEventListener("message",h2())
     function h2(event){
         console.log("got data ",event.data)
         if (String(event.data).includes("new id,")){
@@ -682,9 +772,9 @@ function run_room_process(is_open){ //here I get content.js messages but  script
                     msg=msg.split(','); //w.r,new_u,room_id,u1,u2,u3,u4,u5
                     msg.splice(0,3);
                     user.room_members=msg;
-                    console.log("members: ",user.room_members)
+                    console.log("members: ",user.room_members)//u1,u2,u3,u4,u5
 
-                    chrome.tabs.sendMessage(user.room[3],user.room_members,function(response){ //{command:"W?"}
+                    chrome.tabs.sendMessage(user.room[3],"update_members,",user.room_members,function(response){ //{command:"W?"}
                     
                     }) 
                 }
@@ -700,7 +790,7 @@ function run_room_process(is_open){ //here I get content.js messages but  script
 
                     console.log("left member: ",msg)
                     console.log("members: ",user.room_members)
-                    chrome.tabs.sendMessage(user.room[3],user.room_members,function(response){ //{command:"W?"}
+                    chrome.tabs.sendMessage(user.room[3],"update_members,",user.room_members,function(response){ //{command:"W?"}
                     
                     }) 
                 }
@@ -754,5 +844,8 @@ function notify_content_info(){
     console.log("N I H ",user.room[4])
 
     chrome.tabs.sendMessage(user.room[3],String(user.room[4]+","+user.room[2]),function(response){ //{command:"W?"}
+    }) 
+
+    chrome.tabs.sendMessage(user.room[3],user.connection,function(response){ //{command:"W?"}
     }) 
 }
