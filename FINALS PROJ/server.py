@@ -175,6 +175,7 @@ async def listen(websocket,path):
                     data=message.split(',')
                     url=data[1]
                     soc_id=data[-1]
+                    print(f"creating new room -> {message}")
                     room_id=create_new_room(soc_id,url)
                     print(f"room {room_id} was created by {soc_id}")
                     await websocket.send(room_id+","+rooms[room_id][0][0]+","+rooms[room_id][0][1]) #id,password
@@ -212,11 +213,11 @@ async def listen(websocket,path):
                     room_id=data[1]
                     soc_id=data[-1]
 
-                    print(f"user: {soc_id} exited room {room_id}")
+                    print(f"user: {soc_id} exited room {room_id}ASJDHASKJDHJKASHDKJAHSJKDHAKJSDHJKASHDJAHKDHASDHKJAS")
                         
 
-                    #checks if room is empty
-                    if not (rooms[room_id][1]):
+                    #checks if room user leaving is the last one
+                    if not (rooms[room_id][1][1]):
                         # need to delete room id and password from used combs
 
                         #delete room

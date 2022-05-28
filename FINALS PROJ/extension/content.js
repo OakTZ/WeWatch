@@ -1,7 +1,8 @@
 //content.js
 
-
-//boolean to not lets
+var id
+var username
+var room_id
 
 var run
 
@@ -17,6 +18,9 @@ var timeline
 
 var server_order=false
 
+var soc
+var soc_active=false
+var address
 
 //when youtube first loading - waits until the video element has loaded
 document.addEventListener('yt-navigate-finish',process);
@@ -39,6 +43,7 @@ function process(){
 
     video.pause();
 
+    //connet to server from content.js
 
     //ON MESSAGE FROM background.js
     chrome.runtime.onMessage.addListener(function(message,sender,sendResponce){
@@ -59,25 +64,44 @@ function process(){
            sendResponce("^");
         }
         
-        else{
+        else if(message.includes("info,")){
 
             data=message.split(",")
 
             //ishost
-            
-            if(data[0]=="true"){
+            if(data[1]=="true"){
                 console.log("t");
                 ishost=true;
             }
-            else if(data[0]=="false"){
+            else if(data[1]=="false"){
                 console.log("f");
                 ishost=false;
             }
             
+            //room id
+            room_id=data[2]
 
             //vidUrl
-            vidUrl=data[1]
+            vidUrl=data[3]
             console.log(vidUrl)
+
+
+            //id and username
+            id=data[4]
+            username=data[5]
+
+            //soc address
+            address=data[6]
+            
+            soc= new WebSocket(address);
+
+            soc.addEventListener("open",h1)
+            function h1(){
+                soc.send("reconnecting,"+id+","+username);
+                
+                coms()
+                soc.removeEventListener("open",h1)
+            }
 
             return true; //stopping message port closing
 
@@ -100,18 +124,24 @@ function process(){
         }
     }, true);
     
-
+    
+    
 
     //VIDEO EVENTS
 
+    //0-w.r,1-room id,2-user id,3-command,4-vid tl
     video.onplaying=function(){//if user pressed play
         console.log("cs- ",server_order,"&& ih- ",ishost);
         if (ishost && server_order==false){
             console.log("sending onplaying");
             //letting know to server to play everyone in spesific timestamp
+
+            send_message("w.r,"+room_id+","+id+",play,"+video.currentTime);
+
+            /*
             chrome.runtime.sendMessage("watching_room,playing,"+video.currentTime, (response) => {
                     
-            });
+            });*/
         }
     }
     video.onpause=function(){
@@ -119,28 +149,37 @@ function process(){
         if (ishost && server_order==false){
             console.log("sending onpause");
             //letting know to server to pause everyone in spesific timestamp
+            
+            send_message("w.r,"+room_id+","+id+",pause,"+video.currentTime);
+
+            /*
             chrome.runtime.sendMessage("watching_room,paused,"+video.currentTime, (response) => {
                     
             });
+            */
         }
     }
     video.ontimeupdate=function(){ 
         console.log("cs- ",server_order,"&& ih- ",ishost);
         if (ishost && server_order==false){
-            console.log("sending ontimeupdate");
             //if user changed timeline
             if (Math.abs(video.currentTime-timeline)>1){
-
+                console.log("sending ontimeupdate");
                 //pauseing vid ->letting know to server that time has changed->server plays in sync
+
+                send_message("w.r,"+room_id+","+id+",move tl,"+video.currentTime);
+                /*
                 chrome.runtime.sendMessage("watching_room,move tl,"+video.currentTime, (response) => {
                     
                 });
+                */
             }
 
             timeline=video.currentTime;
         }
 
     }
+    
 
 
 
@@ -206,6 +245,8 @@ function is_open(){
 
     if (location.href!=vidUrl && vidUrl!=null){
         console.log("exiting content.js from window")
+        send_message("exit_room,"+room_id+","+user.id);
+        
         chrome.runtime.sendMessage("watching_room,exited", (response) => {
                     
         });
@@ -220,6 +261,69 @@ function keep_bg_alive(){
     chrome.runtime.sendMessage("k.a", (response) => {
                     
     });
+}
+
+function coms(){
+    soc.onmessage=function(event){ //HERE
+
+        var msg=String(event.data);
+
+        console.log("got msg!!!!: ",msg);
+
+        if(msg.includes("w.r,")){
+
+            if (msg.includes("new_u")){
+                console.log("new member has joined")
+
+                msg=msg.split(','); //w.r,new_u,room_id,u1,u2,u3,u4,u5
+                msg.splice(0,3);
+                let room_members=msg;
+                console.log("members: ",user.room_members)//u1,u2,u3,u4,u5
+
+                //notify bg
+                chrome.runtime.sendMessage("watching_room,joined m,"+room_members, (response) => {
+                    
+                });
+
+            }
+            else if (msg.includes("left_u")){
+                console.log("member has left")
+
+                msg=msg.split(','); //w.r,left_u,room_id,u1
+                msg.splice(0,3);
+                let left_u=msg[0];
+
+                //notify bg
+                chrome.runtime.sendMessage("watching_room,left m,"+left_u, (response) => {
+                    
+                });
+
+                /*
+                index=user.room_members.indexOf(left_u);
+                user.room_members.splice(index,1);
+                */
+
+                /*
+                console.log("left member: ",msg)
+                console.log("members: ",user.room_members)
+                chrome.tabs.sendMessage(user.room[3],"update_members,",user.room_members,function(response){ //{command:"W?"}
+                
+                }) 
+                */
+            }
+            else if(msg.includes("host")){
+                ishost=true;
+                
+                //notify bg
+                chrome.runtime.sendMessage("watching_room,nowhost,", (response) => {
+                    
+                });
+            }
+            else{
+                run_command(msg)
+            }
+        }
+    }
 }
 
 // *****HELPING FUNCTIONS*****
@@ -278,3 +382,44 @@ function wait_time(e_time){
 
 
 
+function send_message(msg){
+    check_connection().then((message)=>{
+        soc.send(msg);
+    }).catch((error)=>{
+        reconnect().then(soc.send(msg));
+    }); 
+}
+
+function check_connection(){
+    return new Promise((resolve,reject)=>{
+
+        if (soc==null){
+            reject("recconecting")
+            
+        }
+        else if (soc.readyState != 1 ){
+            reject("recconecting")
+        }
+        else{
+            resolve("connection is still open");
+        }
+    });
+}
+
+function reconnect(){
+
+    return new Promise((resolve,reject)=>{
+        soc = new WebSocket(address);
+
+        soc.onopen = function(e) {
+            console.log("sending: ",user.id)
+            soc.send("reconnecting,"+user.id+","+user.username);
+        };
+
+        soc.onmessage=function(event){
+            resolve();
+        };
+
+    });
+    
+}

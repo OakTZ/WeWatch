@@ -62,6 +62,7 @@ chrome.storage.local.get(['userLocal'], async function (result) {
         // the user object every time the backgorund.js loads.
         let ul={
             connection:undefined,
+            address:"ws://localhost:8765",
             id:"id",
             username:"username",
             room:["id","password","url","tabid","ishost"],
@@ -360,7 +361,7 @@ chrome.webRequest.onBeforeRedirect.addListener(function(details){
 //LISTEN TO MESSAGE OVER CONTENT SCRIPT
 chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
-
+    update_user(user)
 
     //in-room commands (if user is host)
     if (message.split(',')[0]=="watching_room"){ //&& user.in_room &&user.room[4]
@@ -388,6 +389,32 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
             send_message("w.r,"+user.room[0]+","+user.id+",move tl,"+data[2]);
         }
 
+        else if (data[1]=="joined m"){
+            data.splice(0,2);
+            user.room_members=data;
+            update_user(user)
+            chrome.tabs.sendMessage(user.room[3],"update_members,",user.room_members,function(response){ //{command:"W?"}
+            
+            }) 
+        }
+        else if (data[1]=="left m"){
+            let left_u=data[2]
+            console.log("left member: ",msg)
+            index=user.room_members.indexOf(left_u);
+            user.room_members.splice(index,1);
+
+            update_user(user)
+
+            console.log("members: ",user.room_members)
+            chrome.tabs.sendMessage(user.room[3],"update_members,",user.room_members,function(response){ //{command:"W?"}
+            
+            }) 
+                    
+        }
+        else if (data[1]=="nowhost"){
+            user.room[4]=true;
+            update_user(user)
+        }
         else if (data[1]=="exited"){
 
             console.log("User exited watching room - content script");
@@ -395,16 +422,16 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
             user.room_process[0]=false;
             
             console.log("OnContentScript - user went out of watching room");
-            send_message("exit_room,"+user.room[0]+","+user.id);
 
             user.in_room=false;
             user.room=["id","password","url","tabid"];
             user.room_members=[]
 
             update_user(user);
-            
-            
+               
         }
+
+
     }
 
     //k.a bg.js
@@ -432,9 +459,9 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
         //create new watching room
         else if (message == 'create new watching room') { //need to exit old one when created new one
 
-            
+            update_user(user)
             send_message("create_room,"+user.current_tab[0]+","+user.id);
-            /*
+            
             user.connection.onmessage=function(event){
                 var data=event.data;
                 data=data.split(',')
@@ -460,36 +487,8 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
 
             }
-            */
+            
 
-            user.connection.addEventListener("message",h2())
-
-            function h2(event){
-                var data=event.data;
-                data=data.split(',')
-                user.room[0]=data[0];
-                user.room[1]=data[1];
-                user.room[2]=data[2];
-                user.room[3]=user.current_tab[1];
-                user.room[4]=true;
-
-
-                //need to add username list here 
-                user.room_members.push(user.username)
-                console.log(user.room_members)
-
-                user.in_room=true;
-
-                update_user(user);
-                
-                chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
-                sendResponse("^");
-
-                run_room_process(false);
-        
-                user.connection.removeEventListener("message",h2)
-                
-            }
             
             
             
@@ -501,7 +500,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
             //console.log("JOINING ROOM,"+data[1]+","+data[2])
             send_message("join_room,"+msg[1]+","+msg[2]+","+user.id);
-            /*
+            
             user.connection.onmessage=function(event){
                 let data=event.data.split(',');
                 //data=data.split(',');
@@ -530,39 +529,8 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
                 
                 
             }
-            */
-            user.connection.addEventListener("message",h2())
-
-            function h2(event){
-                let data=event.data.split(',');
-                //data=data.split(',');
-                if(data[0]=="TRUE"){
             
-                    user.room[0]=msg[1];
-                    user.room[1]=msg[2];
-                    user.room[2]=data[1];
-                    user.room[4]=false;
-                    user.in_room=true;
-                    let temp=data;
-
-                    temp.splice(0,2);
-                    user.room_members=temp;
-
-                    update_user(user);
-                   
-                    //console.log("eve data "+String(event.data))
-                    sendResponse(String(event.data));
-
-                    
-                }
-                else{
-                    sendResponse("false id or password");
-                }
-        
-                user.connection.removeEventListener("message",h2)
-                
-            }
-    
+            
         }
 
     }
@@ -577,9 +545,9 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
 function connect(){
 
-    user.connection = new WebSocket('ws://localhost:8765'); //ws:// 10.30.56.240:8765 
+    user.connection = new WebSocket(user.address); //ws:// 10.30.56.240:8765 
 
-    /*
+    
     user.connection.onopen = function(e) {
         user.connection.send("get_id");
     };
@@ -597,41 +565,14 @@ function connect(){
         console.log("connection: ",user.id,",",user.username);
     };
     //setInterval(keep_alive,10000)
-    */
-     
     
-
-    user.connection.addEventListener("open",h1)
-    function h1(){
-        user.connection.send("get_id");
-        user.connection.removeEventListener("open",h1)
-    }
-
-    user.connection.addEventListener("message",h2())
-
-    function h2(event){
-        let data=event.data.split(',');
-        
-        let temp_i=data[0];
-        user.id=temp_i;
-
-        let temp_u=data[1];
-        user.username=temp_u;
-
-        update_user(user);
-        console.log("connection: ",user.id,",",user.username);
-
-        user.connection.removeEventListener("message",h2)
-        
-    }
 }
 
 function send_message(msg){
     check_connection().then((message)=>{
         user.connection.send(msg);
     }).catch((error)=>{
-        reconnect();
-        user.connection.send(msg);
+        reconnect().then(user.connection.send(msg));
     }); 
 }
 
@@ -653,54 +594,34 @@ function check_connection(){
 
 function reconnect(){
 
+    return new Promise((resolve,reject)=>{
+        user.connection = new WebSocket(user.address);
 
-    user.connection = new WebSocket('ws://localhost:8765 ');
+        user.connection.onopen = function(e) {
+            console.log("sending: ",user.id)
+            user.connection.send("reconnecting,"+user.id+","+user.username);
+        };
 
-    user.connection.addEventListener("open",h1)
-    function h1(){
-        user.connection.send("reconnecting,"+user.id+","+user.username);
-        user.connection.removeEventListener("open",h1)
-    }
+        user.connection.onmessage=function(event){
 
-    user.connection.addEventListener("message",h2())
-    function h2(event){
-        console.log("got data ",event.data)
-        if (String(event.data).includes("new id,")){
-            console.log("getting new id...");
+            console.log("got data ",event.data)
+            if (String(event.data).includes("new id,")){
+                console.log("getting new id...");
 
-            let temp_i=(event.data.split(','))[1]
-            user.id=temp_i;
+                let temp_i=(event.data.split(','))[1]
+                user.id=temp_i;
 
-            update_user(user);
-            
-            user.connection.removeEventListener("message",h2)
-        }
-    }
+                update_user(user);
+                
+            }
+            else{
+                console.log(event.data);
+            }
 
-    /*
-    user.connection.onopen = function(e) {
-        console.log("sending: ",user.id)
-        user.connection.send("reconnecting,"+user.id+","+user.username);
-    };
-
-    user.connection.onmessage=function(event){
-
-        console.log("got data ",event.data)
-        if (String(event.data).includes("new id,")){
-            console.log("getting new id...");
-
-            let temp_i=(event.data.split(','))[1]
-            user.id=temp_i;
-
-            update_user(user);
-            
-        }
-        else{
-            console.log(event.data);
-        }
-
-    };
-    */
+            resolve();
+        };
+    });
+    
 }
 /*
 async function get_user(){
@@ -754,10 +675,11 @@ function run_room_process(is_open){ //here I get content.js messages but  script
         setTimeout(notify_content_info,1000);
 
         //check room status
-        user.room_process[1]=setInterval(check_status,5000);
+        user.room_process[1]=setInterval(check_status,1000);
 
         update_user(user);
         //server video commands
+        /*
         user.connection.onmessage=function(event){ //HERE
 
             var msg=String(event.data);
@@ -808,6 +730,7 @@ function run_room_process(is_open){ //here I get content.js messages but  script
             }
             
         }
+        */
 
 
 
@@ -829,7 +752,7 @@ function check_status(){
         clearInterval(user.room_process[1]);
     }
     else{
-        send_message("k.a"); // keep alive the connection bewtween client and server
+        //send_message("k.a"); // keep alive the connection bewtween client and server
         chrome.tabs.sendMessage(user.room[3],"k.a",function(response){ //keep alive the background.js
         }) ;
     }
@@ -839,13 +762,7 @@ function check_status(){
 
 function notify_content_info(){
 
-
-
-    console.log("N I H ",user.room[4])
-
-    chrome.tabs.sendMessage(user.room[3],String(user.room[4]+","+user.room[2]),function(response){ //{command:"W?"}
+    chrome.tabs.sendMessage(user.room[3],String("info,"+user.room[4]+","+user.room[0]+","+user.room[2]+","+user.id+","+user.username+","+user.address),function(response){ //{command:"W?"}
     }) 
 
-    chrome.tabs.sendMessage(user.room[3],user.connection,function(response){ //{command:"W?"}
-    }) 
 }
