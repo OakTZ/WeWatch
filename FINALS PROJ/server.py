@@ -1,5 +1,7 @@
 #from math import comb
 import websockets
+import ssl
+import pathlib
 import asyncio
 import string
 import random
@@ -83,6 +85,7 @@ async def broadcast(msg):
         data=msg.split(',') #w.r,new_u,room_id,u1,u2,u3,u4,u5
         for uId in (rooms[data[2]][1]):
             try:
+                print("sending new u")
                 await ids[uId].send(msg) 
             except Exception as e :
                 print("exe:")
@@ -242,6 +245,7 @@ async def listen(websocket,path):
 
     except websockets.exceptions.ConnectionClosed:
         print("A CLIENT HAS DISSCONECTED")
+
 
 
 start_server = websockets.serve(listen, "0.0.0.0", 8765) 

@@ -670,9 +670,9 @@ function run_room_process(is_open){ //here I get content.js messages but  script
                 
             );
         }
-
+        //notify_content_info();
         //sending content script if user is host or not
-        setTimeout(notify_content_info,1000);
+        setTimeout(notify_content_info,500);
 
         //check room status
         user.room_process[1]=setInterval(check_status,1000);

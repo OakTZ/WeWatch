@@ -50,7 +50,7 @@ function process(){
 
         console.log("msg",message);
         if(message.includes("w.r,")){
-            console.log("cmd")
+            //console.log("cmd")
             run_command(message);
 
             return true; //stopping message port closing
@@ -66,15 +66,17 @@ function process(){
         
         else if(message.includes("info,")){
 
+            console.log("GOT INFO")
+
             data=message.split(",")
 
             //ishost
             if(data[1]=="true"){
-                console.log("t");
+                //console.log("t");
                 ishost=true;
             }
             else if(data[1]=="false"){
-                console.log("f");
+                //console.log("f");
                 ishost=false;
             }
             
@@ -83,7 +85,7 @@ function process(){
 
             //vidUrl
             vidUrl=data[3]
-            console.log(vidUrl)
+
 
 
             //id and username
@@ -97,9 +99,11 @@ function process(){
 
             soc.addEventListener("open",h1)
             function h1(){
+                console.log("OPENED SOCKET")
                 soc.send("reconnecting,"+id+","+username);
                 
                 coms()
+            
                 soc.removeEventListener("open",h1)
             }
 
@@ -131,7 +135,7 @@ function process(){
 
     //0-w.r,1-room id,2-user id,3-command,4-vid tl
     video.onplaying=function(){//if user pressed play
-        console.log("cs- ",server_order,"&& ih- ",ishost);
+        //console.log("cs- ",server_order,"&& ih- ",ishost);
         if (ishost && server_order==false){
             console.log("sending onplaying");
             //letting know to server to play everyone in spesific timestamp
@@ -145,7 +149,7 @@ function process(){
         }
     }
     video.onpause=function(){
-        console.log("cs- ",server_order,"&& ih- ",ishost);
+        //console.log("cs- ",server_order,"&& ih- ",ishost);
         if (ishost && server_order==false){
             console.log("sending onpause");
             //letting know to server to pause everyone in spesific timestamp
@@ -160,7 +164,7 @@ function process(){
         }
     }
     video.ontimeupdate=function(){ 
-        console.log("cs- ",server_order,"&& ih- ",ishost);
+        //console.log("cs- ",server_order,"&& ih- ",ishost);
         if (ishost && server_order==false){
             //if user changed timeline
             if (Math.abs(video.currentTime-timeline)>1){
@@ -186,7 +190,7 @@ function process(){
     //AD BLOCKER 
     let observer = new MutationObserver(mutations => { //every time a change is happend in the DOM
 
-        console.log("OBERVER")
+        //console.log("OBERVER")
 
         var skipButton=document.getElementsByClassName("ytp-ad-skip-button");
         var unskipAdd=document.querySelector(".html5-video-player.ad-showing video");
@@ -194,13 +198,13 @@ function process(){
         //checking if skip button is present
         if(skipButton!=undefined && skipButton.length>0){
 
-            console.log("AD DETECTED - SKIPPABLE");
+            //console.log("AD DETECTED - SKIPPABLE");
             skipButton[0].click();
         }
         //if there is unskippable ad
         else if(unskipAdd!=undefined){
 
-            console.log("AD DETECTED - UNSKIPPABLE");
+            //console.log("AD DETECTED - UNSKIPPABLE");
             unskipAdd.currentTime=10000;
         }
         
@@ -216,9 +220,10 @@ function process(){
     
     //check if room is still open
     setInterval(is_open,1000);
+
+    //keep connection alive
+    setInterval(keep_coms_alive,1000)
     
-    //keep background.js alive
-    setInterval(keep_bg_alive,295e3)//5min-5sec
 }
 
 
@@ -228,12 +233,12 @@ function process(){
 function disablecontrol(){ 
     
     if(!ishost && playButton.style.display!="none"){
-        console.log("disabling control")
+        //console.log("disabling control")
         playButton.style.display="none";
         bar.style.display="none";
     }
     else if(ishost && playButton.style.display!=""){
-        console.log("allowing control")
+        //console.log("allowing control")
         playButton.style.display="";
         bar.style.display="";
     }
@@ -244,7 +249,7 @@ function disablecontrol(){
 function is_open(){
 
     if (location.href!=vidUrl && vidUrl!=null){
-        console.log("exiting content.js from window")
+        //console.log("exiting content.js from window")
         send_message("exit_room,"+room_id+","+user.id);
         
         chrome.runtime.sendMessage("watching_room,exited", (response) => {
@@ -256,11 +261,8 @@ function is_open(){
 
 
 //KEEP BG ALIVE WHILE IN ROOM
-function keep_bg_alive(){
-    console.log("k.a")
-    chrome.runtime.sendMessage("k.a", (response) => {
-                    
-    });
+function keep_coms_alive(){
+    soc.sendMessage("k.a")
 }
 
 function coms(){
@@ -273,12 +275,12 @@ function coms(){
         if(msg.includes("w.r,")){
 
             if (msg.includes("new_u")){
-                console.log("new member has joined")
+                console.log("NEW MEMBER HAS JOINED")
 
                 msg=msg.split(','); //w.r,new_u,room_id,u1,u2,u3,u4,u5
                 msg.splice(0,3);
                 let room_members=msg;
-                console.log("members: ",user.room_members)//u1,u2,u3,u4,u5
+                //console.log("members: ",user.room_members)//u1,u2,u3,u4,u5
 
                 //notify bg
                 chrome.runtime.sendMessage("watching_room,joined m,"+room_members, (response) => {
@@ -287,7 +289,7 @@ function coms(){
 
             }
             else if (msg.includes("left_u")){
-                console.log("member has left")
+                //console.log("member has left")
 
                 msg=msg.split(','); //w.r,left_u,room_id,u1
                 msg.splice(0,3);
@@ -412,7 +414,7 @@ function reconnect(){
         soc = new WebSocket(address);
 
         soc.onopen = function(e) {
-            console.log("sending: ",user.id)
+            //console.log("sending: ",user.id)
             soc.send("reconnecting,"+user.id+","+user.username);
         };
 
