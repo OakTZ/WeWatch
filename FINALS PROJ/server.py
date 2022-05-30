@@ -153,22 +153,21 @@ async def listen(websocket,path):
                 elif("reconnecting" in message):
 
                     data=message.split(',')
-                    print(data)
                     check_id=data[1]
                     username=data[2]
-                    print(f"{data[1]} wants to recconect")
+                    #print(f"{data[1]} wants to recconect")
                     if check_id in ids:
-                        print("OK")
+                        #print("OK")
                         ids[check_id]=websocket
                         usernames[check_id]=username
-                        print(f"reconnecting {data[1]} by id")
+                        #print(f"reconnecting {data[1]} by id")
                         await websocket.send("reconnected you by id")
 
                     else:
                         new_id=(create_new_id(websocket))
                         ids[new_id]=websocket
                         usernames[new_id]=username
-                        print(f"gave {data[1]} new id -> {new_id}")
+                        #print(f"gave {data[1]} new id -> {new_id}")
                         await websocket.send("new_id,"+new_id)
 
                         #await websocket.send(soc_id)
@@ -178,9 +177,9 @@ async def listen(websocket,path):
                     data=message.split(',')
                     url=data[1]
                     soc_id=data[-1]
-                    print(f"creating new room -> {message}")
+                    #print(f"creating new room -> {message}")
                     room_id=create_new_room(soc_id,url)
-                    print(f"room {room_id} was created by {soc_id}")
+                    print(f"room: {room_id} was created by: {soc_id}")
                     await websocket.send(room_id+","+rooms[room_id][0][0]+","+rooms[room_id][0][1]) #id,password
                 
                 if ("join_room," in message):
@@ -216,27 +215,27 @@ async def listen(websocket,path):
                     room_id=data[1]
                     soc_id=data[-1]
 
-                    print(f"user: {soc_id} exited room {room_id}ASJDHASKJDHJKASHDKJAHSJKDHAKJSDHJKASHDJAHKDHASDHKJAS")
+                    print(f"user: {soc_id} exited room {room_id}")
                         
 
                     #checks if room user leaving is the last one
-                    if not (rooms[room_id][1][1]):
+                    if (rooms[room_id][1].__len__()==1): #YOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
                         # need to delete room id and password from used combs
-
+                        print(f"deleting room: {room_id}")
                         #delete room
                         del rooms[room_id]
                     else:
+                        print(f"IN ELSE")
                         if (rooms[room_id][1].index(soc_id)==0):
                             nxt_host=rooms[room_id][1][1]
-                            print(f"assigning new host to room {room_id}")
-                            await ids[nxt_host].send("host")
+                            print(f"Assigning new host: {nxt_host} to room: {room_id}")
+                            await ids[nxt_host].send("w.r,host")
 
-                    rooms[room_id][1].remove(soc_id)
-                    str_members=','.join(room_members[room_id])
-                    room_members[room_id].remove(usernames[soc_id])
-
-                    await broadcast(f"w.r,left_u,{room_id},{str_members}") #w.r,left_u,room_id,u1
-                    print(rooms)
+                        rooms[room_id][1].remove(soc_id)
+                        str_members=','.join(room_members[room_id])
+                        room_members[room_id].remove(usernames[soc_id])
+                        await broadcast(f"w.r,left_u,{room_id},{str_members}") #w.r,left_u,room_id,u1
+                        print(rooms)
                     
                 else:
                     pass

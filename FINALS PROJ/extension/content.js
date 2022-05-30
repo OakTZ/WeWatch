@@ -86,6 +86,7 @@ function process(){
         }
     });
 
+
     //connet to server from content.js
 
     //ON MESSAGE FROM background.js
@@ -255,6 +256,12 @@ function process(){
     observer.observe(document, { childList: true, subtree: true });
 
 
+    //USER EXITING THE WATCHING ROOM
+    window.onclose(()=>{
+        chrome.runtime.sendMessage("watching_room,exited", (response) => {
+                    
+        });
+    });
 
 
 

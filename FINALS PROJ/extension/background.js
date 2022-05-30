@@ -289,11 +289,11 @@ chrome.tabs.onCreated.addListener(function(tab){
 chrome.tabs.onRemoved.addListener (function(tabId) {
 
 
-    //console.log(user.username)
+    console.log("onRemoved INROOM?"+user.in_room)
 
-
+    
     if (user.in_room){
-        //console.log("current tab: "+current_tab[0]+" room tab: "+room[2])
+        console.log("current tab: "+user.current_tab[0]+" room tab: "+user.room[2]) //room:["id","password","url","tabid","ishost"],
         if (user.current_tab[0]==user.room[2]){
 
             console.log("OnRemoved - user went out of watching room");
@@ -310,6 +310,7 @@ chrome.tabs.onRemoved.addListener (function(tabId) {
         }
     
     }
+    
 
 });
 
@@ -318,7 +319,7 @@ chrome.webNavigation.onCommitted.addListener(function(details) {
 
 
 
-    console.log(user.username)
+    //console.log(user.username)
 
     
     //if a room tab has been refreshed
@@ -364,12 +365,17 @@ chrome.webRequest.onBeforeRedirect.addListener(function(details){
 chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
     update_user(user)
-
+    console.log("MSG: "+message)
     //in-room commands (if user is host)
-    if (message.split(',')[0]=="watching_room"){ //&& user.in_room &&user.room[4]
-        console.log("in here")
+    if (message.split(',')[0]=="watching_room"){ //&& user.in_room &&user.room[4] watching_room,exited
+        //console.log("in here")
         data=message.split(',');
 
+        //update user's tab info from content script
+        user.room[3]=sender.tab.id;
+        user.room[2]=sender.tab.url;
+        update_user(user)
+        /*
         if(data[1]=="playing"){
             console.log("PLAYING");
 
@@ -390,8 +396,10 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
             
             send_message("w.r,"+user.room[0]+","+user.id+",move tl,"+data[2]);
         }
+        */
 
-        else if (data[1]=="joined m"){
+        if (data[1]=="joined m"){
+            console.log("new member has joined the room")
             data.splice(0,2);
             user.room_members=data;
             update_user(user)
@@ -407,7 +415,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
             update_user(user)
 
-            console.log("members: ",user.room_members)
+            //console.log("members: ",user.room_members)
             chrome.tabs.sendMessage(user.room[3],"update_members,",user.room_members,function(response){ //{command:"W?"}
             
             }) 
@@ -418,13 +426,13 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
             update_user(user)
         }
         else if(data[1]=="get info"){
-            console.log("AASDSADASDASDASDASDSADSADASDA")
             sendResponse(String("info,"+user.room[4]+","+user.room[0]+","+user.room[2]+","+user.id+","+user.username+","+user.address));
         }
+        /*
         else if (data[1]=="exited"){
 
-            console.log("User exited watching room - content script");
-
+            console.log("User exited watching room - content scriptYPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP");
+            send_message("exit_room,"+user.room[0]+","+user.id);
             user.room_process[0]=false;
             
             console.log("OnContentScript - user went out of watching room");
@@ -436,6 +444,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
             update_user(user);
                
         }
+        */
 
 
     }
@@ -480,7 +489,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
 
                 //need to add username list here 
                 user.room_members.push(user.username)
-                console.log(user.room_members)
+                //console.log(user.room_members)
 
                 user.in_room=true;
 
@@ -510,7 +519,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
             user.connection.onmessage=function(event){
                 let data=event.data.split(',');
                 //data=data.split(',');
-                if(data[0]=="TRUE"){
+                if(data[0]=="TRUE"){ //room:["id","password","url","tabid","ishost"],
             
                     user.room[0]=msg[1];
                     user.room[1]=msg[2];
@@ -576,9 +585,11 @@ function connect(){
 
 function send_message(msg){
     check_connection().then((message)=>{
+        console.log("sending succesfully")
         user.connection.send(msg);
     }).catch((error)=>{
-        reconnect().then(user.connection.send(msg));
+        console.log("reconnecting and then sending")
+        reconnect().then(user.connection.send(msg),console.log("sending"));
     }); 
 }
 
@@ -604,15 +615,15 @@ function reconnect(){
         user.connection = new WebSocket(user.address);
 
         user.connection.onopen = function(e) {
-            console.log("sending: ",user.id)
+            //console.log("sending: ",user.id)
             user.connection.send("reconnecting,"+user.id+","+user.username);
         };
 
         user.connection.onmessage=function(event){
 
-            console.log("got data ",event.data)
+            //console.log("got data ",event.data)
             if (String(event.data).includes("new id,")){
-                console.log("getting new id...");
+                console.log("got new id by server");
 
                 let temp_i=(event.data.split(','))[1]
                 user.id=temp_i;
@@ -621,7 +632,7 @@ function reconnect(){
                 
             }
             else{
-                console.log(event.data);
+                console.log("recconected succsesfully");
             }
 
             resolve();
@@ -651,7 +662,7 @@ function get_user(){
 }
 
 function update_user(tmp_user){
-    console.log("updating user")
+    //console.log("updating user")
     chrome.storage.local.get(['userLocal'], async function (result) {
         var userLocal = tmp_user;
         chrome.storage.local.set({userLocal: userLocal}, function () {}); // save it in local.
