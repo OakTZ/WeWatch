@@ -43,6 +43,49 @@ function process(){
 
     video.pause();
 
+    //get info from background.js
+    chrome.runtime.sendMessage("watching_room,get info", (response) => { //YOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+        console.log("GOT INFO",response)
+        data=response.split(",")
+
+        //ishost
+        if(data[1]=="true"){
+            //console.log("t");
+            ishost=true;
+        }
+        else if(data[1]=="false"){
+            //console.log("f");
+            ishost=false;
+        }
+        
+        //room id
+        room_id=data[2]
+
+        //vidUrl
+        vidUrl=data[3]
+
+
+
+        //id and username
+        id=data[4]
+        username=data[5]
+
+        //soc address
+        address=data[6]
+        
+        soc= new WebSocket(address);
+
+        soc.addEventListener("open",h1)
+        function h1(){
+            console.log("OPENED SOCKET")
+            soc.send("reconnecting,"+id+","+username);
+            
+            coms()
+        
+            soc.removeEventListener("open",h1)
+        }
+    });
+
     //connet to server from content.js
 
     //ON MESSAGE FROM background.js

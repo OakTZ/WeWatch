@@ -3,40 +3,41 @@ var room_id=""
 var room_password=""
 
 //get room details and nofity the bg that the user is in the watching room
+window.onload = function(){
+    chrome.runtime.sendMessage("in watching room", (response) => {
+        let data=response.split(',');
+        console.log("pre: ",data)
+        document.getElementById("room_id").innerHTML=data[0];
+        document.getElementById("room_password").innerHTML=data[1];
+        
+        data.splice(0,2);
+        console.log("Data: ",data)
+        insert_members(data);
+        /*
+        for (u_name in data){
+            let index=1;
 
-chrome.runtime.sendMessage("in watching room", (response) => {
-    let data=response.split(',');
-    console.log("pre: ",data)
-    document.getElementById("room_id").innerHTML=data[0];
-    document.getElementById("room_password").innerHTML=data[1];
-    
-    data.splice(0,2);
-    console.log("Data: ",data)
-    insert_members(data);
-    /*
-    for (u_name in data){
-        let index=1;
+            if(document.getElementById(index.toString())){ // if there is allready a member there -> modifies it
 
-        if(document.getElementById(index.toString())){ // if there is allready a member there -> modifies it
+                document.getElementById(index.toString()).innerHTML(u_name);
+            }
 
-            document.getElementById(index.toString()).innerHTML(u_name);
+            else{// else -> creates a new element
+
+                const para = document.createElement("p");
+                para.setAttribute("id",index.toString())
+                const node = document.createTextNode(u_name);
+                para.appendChild(node);
+                const element = document.getElementById("members");
+                element.appendChild(para);
+
+            }
+            index=index+1;
         }
+        */
 
-        else{// else -> creates a new element
-
-            const para = document.createElement("p");
-            para.setAttribute("id",index.toString())
-            const node = document.createTextNode(u_name);
-            para.appendChild(node);
-            const element = document.getElementById("members");
-            element.appendChild(para);
-
-        }
-        index=index+1;
-    }
-    */
-
-});
+    });
+}
 
 chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
     console.log("got new user");

@@ -116,6 +116,7 @@ chrome.storage.local.get(['userLocal'], async function (result) {
 
         
         //reconfiguring connection with content.js
+        /*
         if(user.in_room){
             console.log("reconfiguring connection with content.js");
 
@@ -126,6 +127,7 @@ chrome.storage.local.get(['userLocal'], async function (result) {
             
             run_room_process(true);
         }
+        */
     }
 });
 
@@ -415,6 +417,10 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
             user.room[4]=true;
             update_user(user)
         }
+        else if(data[1]=="get info"){
+            console.log("AASDSADASDASDASDASDSADSADASDA")
+            sendResponse(String("info,"+user.room[4]+","+user.room[0]+","+user.room[2]+","+user.id+","+user.username+","+user.address));
+        }
         else if (data[1]=="exited"){
 
             console.log("User exited watching room - content script");
@@ -662,7 +668,7 @@ function run_room_process(is_open){ //here I get content.js messages but  script
 
         if(!is_open){
             const tabId=parseInt(user.room[3]);
-            chrome.scripting.executeScript(
+            chrome.scripting.executeScript( //user.room[4]+","+user.room[0]+","+user.room[2]+","+user.id+","+user.username+","+user.address
                 {
                 target:{tabId: tabId}, 
                 files:["content.js"],
@@ -672,7 +678,7 @@ function run_room_process(is_open){ //here I get content.js messages but  script
         }
         //notify_content_info();
         //sending content script if user is host or not
-        setTimeout(notify_content_info,500);
+        //setTimeout(notify_content_info,500);
 
         //check room status
         user.room_process[1]=setInterval(check_status,1000);
