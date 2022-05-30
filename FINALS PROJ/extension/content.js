@@ -46,16 +46,21 @@ function process(){
     //get info from background.js
     chrome.runtime.sendMessage("watching_room,get info", (response) => { //YOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
         console.log("GOT INFO",response)
+
         data=response.split(",")
+        console.log(data)
 
         //ishost
         if(data[1]=="true"){
-            //console.log("t");
+            console.log("t");
             ishost=true;
         }
         else if(data[1]=="false"){
-            //console.log("f");
+            console.log("f");
             ishost=false;
+            console.log("disabling control")
+            playButton.style.display="none";
+            bar.style.display="none";
         }
         
         //room id
@@ -107,20 +112,20 @@ function process(){
         else if(message=="k.a"){
            sendResponce("^");
         }
-        
+        /*
         else if(message.includes("info,")){
 
             console.log("GOT INFO")
 
             data=message.split(",")
-
+            console.log(data)
             //ishost
             if(data[1]=="true"){
-                //console.log("t");
+                console.log("t");
                 ishost=true;
             }
             else if(data[1]=="false"){
-                //console.log("f");
+                console.log("f");
                 ishost=false;
             }
             
@@ -154,6 +159,7 @@ function process(){
             return true; //stopping message port closing
 
         }
+        */
         
 
 
@@ -266,7 +272,7 @@ function process(){
 
 
     //disable/enable control for user
-    setInterval(disablecontrol,1000);
+    //setInterval(disablecontrol,1000);
     
     //check if room is still open
     setInterval(is_open,1000);
@@ -283,12 +289,12 @@ function process(){
 function disablecontrol(){ 
     
     if(!ishost && playButton.style.display!="none"){
-        //console.log("disabling control")
+        console.log("disabling control")
         playButton.style.display="none";
         bar.style.display="none";
     }
     else if(ishost && playButton.style.display!=""){
-        //console.log("allowing control")
+        console.log("allowing control")
         playButton.style.display="";
         bar.style.display="";
     }
@@ -365,7 +371,11 @@ function coms(){
             }
             else if(msg.includes("host")){
                 ishost=true;
-                
+
+                console.log("allowing control")
+                playButton.style.display="";
+                bar.style.display="";
+
                 //notify bg
                 chrome.runtime.sendMessage("watching_room,nowhost,", (response) => {
                     

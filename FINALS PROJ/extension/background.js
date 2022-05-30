@@ -370,10 +370,10 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
     if (message.split(',')[0]=="watching_room"){ //&& user.in_room &&user.room[4] watching_room,exited
         //console.log("in here")
         data=message.split(',');
-
+        console.log("TAB INFO: "+sender.id+","+sender.url)
         //update user's tab info from content script
-        user.room[3]=sender.tab.id;
-        user.room[2]=sender.tab.url;
+        //user.room[3]=sender.tab.id;
+        //user.room[2]=sender.tab.url;
         update_user(user)
         /*
         if(data[1]=="playing"){
@@ -461,6 +461,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
     
         //notify that the user in watching room
         if(message=="in watching room"){
+
             //give popup room info
             sendResponse(user.room[0]+","+user.room[1]+","+user.room_members.toString());
             
@@ -589,7 +590,17 @@ function send_message(msg){
         user.connection.send(msg);
     }).catch((error)=>{
         console.log("reconnecting and then sending")
-        reconnect().then(user.connection.send(msg),console.log("sending"));
+        reconnect().then(()=>{
+            console.log("sending XD")
+            user.connection.send(msg);
+        });
+        
+        /*
+        reconnect(function(){
+            user.connection.send(msg)
+        },1000);
+        */
+
     }); 
 }
 
@@ -610,7 +621,7 @@ function check_connection(){
 }
 
 function reconnect(){
-
+    
     return new Promise((resolve,reject)=>{
         user.connection = new WebSocket(user.address);
 
@@ -632,13 +643,47 @@ function reconnect(){
                 
             }
             else{
-                console.log("recconected succsesfully");
+                event.data
+                console.log("recconected succsesfully"+event.data); // prints twitch because it recives two messages!!!!! dealy change
+
             }
 
-            resolve();
         };
+
+        setTimeout(()=>{
+            resolve();
+        },500); // i need to play with the delay
+        
+
     });
-    
+    /*
+    user.connection = new WebSocket(user.address);
+
+    user.connection.onopen = function(e) {
+        //console.log("sending: ",user.id)
+        user.connection.send("reconnecting,"+user.id+","+user.username);
+    };
+
+    user.connection.onmessage=function(event){
+
+        //console.log("got data ",event.data)
+        if (String(event.data).includes("new id,")){
+            console.log("got new id by server");
+
+            let temp_i=(event.data.split(','))[1]
+            user.id=temp_i;
+
+            update_user(user);
+            
+        }
+        else{
+            console.log("recconected succsesfully");
+        }
+
+    };
+
+    if 
+    */
 }
 /*
 async function get_user(){
