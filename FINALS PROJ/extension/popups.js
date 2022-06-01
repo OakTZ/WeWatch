@@ -56,19 +56,6 @@ window.onload=function(){
             });
         });
     } 
-    /*
-    //IF IN WATCHING ROOM 
-    if (document.getElementById("inWatchingRoom")){
-        //GIVE ROOM DETAILS
-        chrome.runtime.sendMessage("in watching room", (response) => {
-            data=response.split(',');
-            document.getElementById("room_id").innerHTML=data[0]
-            document.getElementById("room_password").innerHTML=data[1]
 
-        });
-    
-
-    }
-    */
 
 }

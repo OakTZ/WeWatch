@@ -111,63 +111,7 @@ function process(){
         else if(message=="close cjs"){
             throw new Error("closing script");
         }
-        /*
-        else if(message=="k.a"){
-           sendResponce("^");
-        }
-        */
-        /*
-        else if(message.includes("info,")){
-
-            console.log("GOT INFO")
-
-            data=message.split(",")
-            console.log(data)
-            //ishost
-            if(data[1]=="true"){
-                console.log("t");
-                ishost=true;
-            }
-            else if(data[1]=="false"){
-                console.log("f");
-                ishost=false;
-            }
-            
-            //room id
-            room_id=data[2]
-
-            //vidUrl
-            vidUrl=data[3]
-
-
-
-            //id and username
-            id=data[4]
-            username=data[5]
-
-            //soc address
-            address=data[6]
-            
-            soc= new WebSocket(address);
-
-            soc.addEventListener("open",h1)
-            function h1(){
-                console.log("OPENED SOCKET")
-                soc.send("reconnecting,"+id+","+username);
-                
-                coms()
-            
-                soc.removeEventListener("open",h1)
-            }
-
-            return true; //stopping message port closing
-
-        }
-        */
         
-
-
-        //return true; //stopping message port closing
 
     });
 
@@ -207,14 +151,8 @@ function process(){
         if (ishost && server_order==false){
             console.log("sending onpause");
             //letting know to server to pause everyone in spesific timestamp
-            
             send_message("w.r,"+room_id+","+id+",pause,"+video.currentTime);
 
-            /*
-            chrome.runtime.sendMessage("watching_room,paused,"+video.currentTime, (response) => {
-                    
-            });
-            */
         }
     }
     video.ontimeupdate=function(){ 
@@ -226,11 +164,7 @@ function process(){
                 //pauseing vid ->letting know to server that time has changed->server plays in sync
 
                 send_message("w.r,"+room_id+","+id+",move tl,"+video.currentTime);
-                /*
-                chrome.runtime.sendMessage("watching_room,move tl,"+video.currentTime, (response) => {
-                    
-                });
-                */
+
             }
 
             timeline=video.currentTime;
@@ -244,7 +178,7 @@ function process(){
     //AD BLOCKER 
     let observer = new MutationObserver(mutations => { //every time a change is happend in the DOM
 
-        //console.log("OBERVER")
+
 
         var skipButton=document.getElementsByClassName("ytp-ad-skip-button");
         var unskipAdd=document.querySelector(".html5-video-player.ad-showing video");
@@ -347,18 +281,6 @@ function coms(){
                     
                 });
 
-                /*
-                index=user.room_members.indexOf(left_u);
-                user.room_members.splice(index,1);
-                */
-
-                /*
-                console.log("left member: ",msg)
-                console.log("members: ",user.room_members)
-                chrome.tabs.sendMessage(user.room[3],"update_members,",user.room_members,function(response){ //{command:"W?"}
-                
-                }) 
-                */
             }
             else if(msg.includes("host")){
                 ishost=true;
@@ -434,15 +356,8 @@ function wait_time(e_time){
 }
 
 
-
 function send_message(msg){
-    /*
-    check_connection().then((message)=>{
-        soc.send(msg);
-    }).catch((error)=>{
-        reconnect().then(soc.send(msg));
-    }); 
-    */
+
     check_connection().then((message)=>{
         console.log("sending succesfully")
         soc.send(msg);
@@ -460,6 +375,7 @@ function send_message(msg){
     });
 }
 
+
 function check_connection(){
     return new Promise((resolve,reject)=>{
 
@@ -476,22 +392,8 @@ function check_connection(){
     });
 }
 
+
 function reconnect(){
-    /*
-    return new Promise((resolve,reject)=>{
-        soc = new WebSocket(address);
-
-        soc.onopen = function(e) {
-            //console.log("sending: ",user.id)
-            soc.send("reconnecting,"+user.id+","+user.username);
-        };
-
-        soc.onmessage=function(event){
-            resolve();
-        };
-
-    });
-    */
 
     return new Promise((resolve,reject)=>{
         user.connection = new WebSocket(user.address);

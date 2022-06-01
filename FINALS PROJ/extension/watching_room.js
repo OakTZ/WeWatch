@@ -12,29 +12,9 @@ window.onload = function(){
         
         data.splice(0,2);
         console.log("Data: ",data)
+
         insert_members(data);
-        /*
-        for (u_name in data){
-            let index=1;
 
-            if(document.getElementById(index.toString())){ // if there is allready a member there -> modifies it
-
-                document.getElementById(index.toString()).innerHTML(u_name);
-            }
-
-            else{// else -> creates a new element
-
-                const para = document.createElement("p");
-                para.setAttribute("id",index.toString())
-                const node = document.createTextNode(u_name);
-                para.appendChild(node);
-                const element = document.getElementById("members");
-                element.appendChild(para);
-
-            }
-            index=index+1;
-        }
-        */
 
     });
 }
@@ -47,34 +27,13 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
     data.splice(0,3);
     console.log("after: ",data)
     insert_members(data);
-    /*
-    for (u_name in data){
-        let index=1;
 
-        if(document.getElementById(index.toString())){ // if there is allready a member there -> modifies it
-
-            document.getElementById(index.toString()).innerHTML(u_name);
-        }
-
-        else{// else -> creates a new element
-
-            const para = document.createElement("p");
-            para.setAttribute("id",index.toString())
-            const node = document.createTextNode(u_name);
-            para.appendChild(node);
-            const element = document.getElementById("members");
-            element.appendChild(para);
-
-        }
-        index=index+1;
-    }
-    */
    sendResponse();
 
 });
 
 
-function insert_members(data){ //need to figure out how to delete elemnts when someone left
+function insert_members(data){ 
     console.log("inseting members")
     let index=1;
     for (const u_name of data){
