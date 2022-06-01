@@ -250,6 +250,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, change, tab) {
         update_user(user);
     }
 
+
     
 });
 
@@ -318,11 +319,6 @@ chrome.tabs.onRemoved.addListener (function(tabId) {
 //WHEN NAVIGATION IS COMMITTED
 chrome.webNavigation.onCommitted.addListener(function(details) {
 
-
-
-    //console.log(user.username)
-
-    
     //if a room tab has been refreshed
     if(["reload", "link", "typed", "generated"].includes(details.transitionType) && details.url==user.room[2] &&details.tabId==user.room[3]){ //NEED TO FIX -> JUST WHEN RELOADING YOU SHOULD REBOT
         //content.js rebot
@@ -344,22 +340,25 @@ chrome.webNavigation.onCommitted.addListener(function(details) {
 chrome.webRequest.onBeforeRedirect.addListener(function(details){
     console.log("onBeoreRedirect")
     //if user went out of watching room
-    if(details.tabId==room[3] && details.documentUrl!=room[2]){
+    if(in_room && details.tabId==room[3] && details.documentUrl!=room[2]){
 
-        
         console.log("user redirected out of watching room")
-        room_process[0]=false;
 
-        reconnent();
-        connection.send("exit_room,"+room[0]+","+id)
+        user.room_process[0]=false;
 
-        in_room=false
-        room=["id","password","url","tabid"]
+        send_message("exit_room,"+user.room[0]+","+user.id)
+
+        user.in_room=false;
+        user.room=["id","password","url","tabid"];
+        user.room_members=[];
+
+        update_user(user);
         
 
     }
 });
 */
+
 
 
 //LISTEN TO MESSAGE OVER CONTENT SCRIPT
@@ -429,10 +428,10 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
         else if(data[1]=="get info"){
             sendResponse(String("info,"+user.room[4]+","+user.room[0]+","+user.room[2]+","+user.id+","+user.username+","+user.address));
         }
-        /*
+        
         else if (data[1]=="exited"){
 
-            console.log("User exited watching room - content scriptYPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP");
+            console.log("User exited watching room - content script");
             send_message("exit_room,"+user.room[0]+","+user.id);
             user.room_process[0]=false;
             
@@ -443,19 +442,22 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
             user.room_members=[]
 
             update_user(user);
+            sendResponse("^")
                
         }
-        */
+        
 
 
     }
 
     //k.a bg.js
+    /*
     else if(message=="k.a"){
         sendResponse("^");
         chrome.tabs.sendMessage(user.room[3],"k.a",function(response){ 
         }); 
     }
+    */
 
     //popup messages
     else{
@@ -474,35 +476,45 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
         }
 
         //create new watching room
-        else if (message == 'create new watching room') { //need to exit old one when created new one
+        else if (message == 'create new watching room') { 
 
-            update_user(user)
-            send_message("create_room,"+user.current_tab[0]+","+user.id);
-            
-            user.connection.onmessage=function(event){
-                var data=event.data;
-                data=data.split(',')
-                user.room[0]=data[0];
-                user.room[1]=data[1];
-                user.room[2]=data[2];
-                user.room[3]=user.current_tab[1];
-                user.room[4]=true;
+            //update_user(user)
+            if (user.in_room){
+                sendResponse("you are already in a watching room")
+            }
+            else{
+                let x=send_message("create_room,"+user.current_tab[0]+","+user.id);
+                console.log("x: "+x)
+                if (x=="X"){
+                    console.log("SENDING AGAIN");
+                    send_message("create_room,"+user.current_tab[0]+","+user.id);
+                }
 
-
-                //need to add username list here 
-                user.room_members.push(user.username)
-                //console.log(user.room_members)
-
-                user.in_room=true;
-
-                update_user(user);
-                
-                chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
-                sendResponse("^");
-
-                run_room_process(false);
+                user.connection.onmessage=function(event){
+                    var data=event.data;
+                    data=data.split(',')
+                    user.room[0]=data[0];
+                    user.room[1]=data[1];
+                    user.room[2]=data[2];
+                    user.room[3]=user.current_tab[1];
+                    user.room[4]=true;
 
 
+                    //need to add username list here 
+                    user.room_members.push(user.username)
+                    //console.log(user.room_members)
+
+                    user.in_room=true;
+
+                    update_user(user);
+                    
+                    chrome.action.setPopup({popup: 'htmls/in_room_popup.html'});
+                    sendResponse("^");
+
+                    run_room_process(false);
+
+
+                }
             }
             
 
@@ -516,36 +528,48 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
             var msg=message.split(',');
 
             //console.log("JOINING ROOM,"+data[1]+","+data[2])
-            send_message("join_room,"+msg[1]+","+msg[2]+","+user.id)
-            
-            user.connection.onmessage=function(event){
-                let data=event.data.split(',');
-                //data=data.split(',');
-                if(data[0]=="TRUE"){ //room:["id","password","url","tabid","ishost"],
-            
-                    user.room[0]=msg[1];
-                    user.room[1]=msg[2];
-                    user.room[2]=data[1];
-                    user.room[4]=false;
-                    user.in_room=true;
-                    let temp=data;
+        
+            if(user.in_room==true){
+                sendResponse("you are already in a watching room")
+            }
+            else{
+                let x=send_message("join_room,"+msg[1]+","+msg[2]+","+user.id)
+                
+                if(x=='X'){
+                    console.log("sending again");
+                    send_message("join_room,"+msg[1]+","+msg[2]+","+user.id)
+                };
+                
+                user.connection.onmessage=function(event){
+                    let data=event.data.split(',');
+                    //data=data.split(',');
+                    if(data[0]=="TRUE"){ //room:["id","password","url","tabid","ishost"],
+                
+                        user.room[0]=msg[1];
+                        user.room[1]=msg[2];
+                        user.room[2]=data[1];
+                        user.room[4]=false;
+                        user.in_room=true;
+                        let temp=data;
 
-                    temp.splice(0,2);
-                    user.room_members=temp;
+                        temp.splice(0,2);
+                        user.room_members=temp;
 
-                    update_user(user);
-                   
-                    //console.log("eve data "+String(event.data))
-                    sendResponse(String(event.data));
+                        update_user(user);
+                    
+                        //console.log("eve data "+String(event.data))
+                        sendResponse(String(event.data));
 
+                        
+                    }
+                    else{
+                        sendResponse("false id or password");
+                    }
+                    
                     
                 }
-                else{
-                    sendResponse("false id or password");
-                }
-                
-                
             }
+            
             
             
             
@@ -595,8 +619,14 @@ function send_message(msg){
     }).catch((error)=>{
         console.log("reconnecting and then sending")
         reconnect().then(()=>{
-            //console.log("sending XD")
-            send_message(msg)
+            if (!msg.includes("join_room") && !msg.includes("create_room")){
+                console.log("sending XD")
+                send_message(msg)
+            }
+            else{
+                return("X")
+            }
+    
             //user.connection.send(msg);
             //return
             //setTimeout(user.connection.send(msg),500)
@@ -869,18 +899,22 @@ function check_status(){
         console.log("exiting msging");
         clearInterval(user.room_process[1]);
     }
+    /*
     else{
         //send_message("k.a"); // keep alive the connection bewtween client and server
-        chrome.tabs.sendMessage(user.room[3],"k.a",function(response){ //keep alive the background.js
-        }) ;
+        //chrome.tabs.sendMessage(user.room[3],"k.a",function(response){ //keep alive the background.js
+        //}) ;
     }
+    */
        
   
 }
 
+/*
 function notify_content_info(){
 
     chrome.tabs.sendMessage(user.room[3],String("info,"+user.room[4]+","+user.room[0]+","+user.room[2]+","+user.id+","+user.username+","+user.address),function(response){ //{command:"W?"}
     }) 
 
 }
+*/

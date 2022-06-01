@@ -43,8 +43,11 @@ function process(){
 
     video.pause();
 
+
+
+
     //get info from background.js
-    chrome.runtime.sendMessage("watching_room,get info", (response) => { //YOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+    chrome.runtime.sendMessage("watching_room,get info", (response) => { 
         console.log("GOT INFO",response)
 
         data=response.split(",")
@@ -92,7 +95,7 @@ function process(){
     });
 
 
-    //connet to server from content.js
+
 
     //ON MESSAGE FROM background.js
     chrome.runtime.onMessage.addListener(function(message,sender,sendResponce){
@@ -108,10 +111,11 @@ function process(){
         else if(message=="close cjs"){
             throw new Error("closing script");
         }
-        
+        /*
         else if(message=="k.a"){
            sendResponce("^");
         }
+        */
         /*
         else if(message.includes("info,")){
 
@@ -262,17 +266,6 @@ function process(){
     observer.observe(document, { childList: true, subtree: true });
 
 
-    //USER EXITING THE WATCHING ROOM
-    window.onclose(()=>{
-        chrome.runtime.sendMessage("watching_room,exited", (response) => {
-                    
-        });
-    });
-
-
-
-    //disable/enable control for user
-    //setInterval(disablecontrol,1000);
     
     //check if room is still open
     setInterval(is_open,1000);
@@ -305,22 +298,20 @@ function disablecontrol(){
 function is_open(){
 
     if (location.href!=vidUrl && vidUrl!=null){
-        //console.log("exiting content.js from window")
-        send_message("exit_room,"+room_id+","+user.id);
-        
         chrome.runtime.sendMessage("watching_room,exited", (response) => {
-                    
+            window.close();       
         });
-        window.close()
+        
     }
 }
 
 
 //KEEP BG ALIVE WHILE IN ROOM
 function keep_coms_alive(){
-    soc.sendMessage("k.a")
+    send_message("k.a")
 }
 
+//MANAGE COMMUNICATION WITH SERVER
 function coms(){
     soc.onmessage=function(event){ //HERE
 
@@ -456,9 +447,6 @@ function send_message(msg){
         console.log("sending succesfully")
         soc.send(msg);
 
-        setTimeout(()=>{
-            resolve();//return;
-        },1000); // i need to play with the delay
 
     }).catch((error)=>{
         console.log("reconnecting and then sending")

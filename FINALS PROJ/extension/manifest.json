@@ -15,8 +15,7 @@
       "webNavigation",
       "declarativeNetRequest",
       "storage"
-      
-    
+
     ],
     "host_permissions": [
       "*://www.youtube.com/*"

@@ -21,8 +21,13 @@ window.onload=function(){
         document.getElementById("createRoom").addEventListener("click",function(){
 
             chrome.runtime.sendMessage("create new watching room", (response) => {
+                if (response=='^'){
+                    window.close();
+                }
+                else{
+                    document.getElementById("canCreate").innerHTML=response;
+                }
                 
-                window.close()
             });
 
         });
