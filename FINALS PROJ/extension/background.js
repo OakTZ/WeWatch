@@ -6,7 +6,7 @@ chrome.storage.local.get(['userLocal'], async function (result) {
     let ul = result.userLocal;
     if (ul === undefined) {
         console.log("entering user")
-        // it means there was nothing before. This way you don't overwrite
+        // it means there was nothing before. This way I don't overwrite
         // the user object every time the backgorund.js loads.
         let ul={
             connection:undefined,
