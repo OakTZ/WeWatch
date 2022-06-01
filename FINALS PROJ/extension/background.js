@@ -69,7 +69,8 @@ chrome.storage.local.get(['userLocal'], async function (result) {
             room_members:[],
             in_room:false,
             room_process:[false,"intervelId"],
-            current_tab:["url","id"]
+            current_tab:["url","id"],
+            buffer: ""
         }
         user=ul;
         await chrome.storage.local.set({userLocal: ul}, function () {}); // save it in local.
@@ -515,7 +516,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
             var msg=message.split(',');
 
             //console.log("JOINING ROOM,"+data[1]+","+data[2])
-            send_message("join_room,"+msg[1]+","+msg[2]+","+user.id);
+            send_message("join_room,"+msg[1]+","+msg[2]+","+user.id)
             
             user.connection.onmessage=function(event){
                 let data=event.data.split(',');
@@ -545,6 +546,7 @@ chrome.runtime.onMessage.addListener(function(message,sender,sendResponse){
                 
                 
             }
+            
             
             
         }
@@ -585,15 +587,42 @@ function connect(){
 }
 
 function send_message(msg){
+
     check_connection().then((message)=>{
         console.log("sending succesfully")
         user.connection.send(msg);
+
     }).catch((error)=>{
         console.log("reconnecting and then sending")
         reconnect().then(()=>{
-            console.log("sending XD")
-            user.connection.send(msg);
+            //console.log("sending XD")
+            send_message(msg)
+            //user.connection.send(msg);
+            //return
+            //setTimeout(user.connection.send(msg),500)
         });
+    });
+    
+    /*
+    check_connection().then((message)=>{
+        console.log("sending succesfully")
+        user.connection.send(msg);
+        user.connection.addEventListener('message',(event)=>{
+           let data=event.data;
+           user.buffer=data;
+
+        },{once:true});
+    }).catch((error)=>{
+        console.log("reconnecting and then sending")
+        reconnect().then(()=>{
+            //console.log("sending XD")
+            send_message(msg)
+            //user.connection.send(msg);
+            //return
+            //setTimeout(user.connection.send(msg),500)
+        });
+        
+        //setTimeout(user.connection.send(msg),1000)//another opsion
         
         /*
         reconnect(function(){
@@ -601,7 +630,8 @@ function send_message(msg){
         },1000);
         */
 
-    }); 
+    //});
+    
 }
 
 function check_connection(){
@@ -626,13 +656,13 @@ function reconnect(){
         user.connection = new WebSocket(user.address);
 
         user.connection.onopen = function(e) {
-            //console.log("sending: ",user.id)
+            console.log("reconnect request")
             user.connection.send("reconnecting,"+user.id+","+user.username);
         };
 
-        user.connection.onmessage=function(event){
+        user.connection.addEventListener('message',(event)=>{
 
-            //console.log("got data ",event.data)
+            console.log("got data ",event.data)
             if (String(event.data).includes("new id,")){
                 console.log("got new id by server");
 
@@ -643,18 +673,44 @@ function reconnect(){
                 
             }
             else{
-                event.data
                 console.log("recconected succsesfully"+event.data); // prints twitch because it recives two messages!!!!! dealy change
-
+                
             }
+            setTimeout(()=>{
+                resolve();//return;
+            },500); // i need to play with the delay
 
-        };
+        },{once:true});
 
+        /*
+        user.connection.onmessage=(function(event){
+            
+            console.log("got data ",event.data)
+            if (String(event.data).includes("new id,")){
+                console.log("got new id by server");
+
+                let temp_i=(event.data.split(','))[1]
+                user.id=temp_i;
+
+                update_user(user);
+                
+            }
+            else{
+                const ans=event.data
+                console.log("recconected succsesfully"+event.data); // prints twitch because it recives two messages!!!!! dealy change
+                
+            }
+            setTimeout(()=>{
+                resolve();return;
+            },500); // i need to play with the delay
+
+        }); // not sure -check once without it ,{once: true}
+        */
+        /*
         setTimeout(()=>{
             resolve();
         },500); // i need to play with the delay
-        
-
+        */
     });
     /*
     user.connection = new WebSocket(user.address);

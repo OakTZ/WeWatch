@@ -445,11 +445,31 @@ function wait_time(e_time){
 
 
 function send_message(msg){
+    /*
     check_connection().then((message)=>{
         soc.send(msg);
     }).catch((error)=>{
         reconnect().then(soc.send(msg));
     }); 
+    */
+    check_connection().then((message)=>{
+        console.log("sending succesfully")
+        soc.send(msg);
+
+        setTimeout(()=>{
+            resolve();//return;
+        },1000); // i need to play with the delay
+
+    }).catch((error)=>{
+        console.log("reconnecting and then sending")
+        reconnect().then(()=>{
+            //console.log("sending XD")
+            send_message(msg)
+            //user.connection.send(msg);
+            //return
+            //setTimeout(user.connection.send(msg),500)
+        });
+    });
 }
 
 function check_connection(){
@@ -469,7 +489,7 @@ function check_connection(){
 }
 
 function reconnect(){
-
+    /*
     return new Promise((resolve,reject)=>{
         soc = new WebSocket(address);
 
@@ -483,5 +503,38 @@ function reconnect(){
         };
 
     });
+    */
+
+    return new Promise((resolve,reject)=>{
+        user.connection = new WebSocket(user.address);
+
+        user.connection.onopen = function(e) {
+            console.log("reconnect request")
+            user.connection.send("reconnecting,"+user.id+","+user.username);
+        };
+
+        user.connection.addEventListener('message',(event)=>{
+
+            console.log("got data ",event.data)
+            if (String(event.data).includes("new id,")){
+                console.log("got new id by server");
+
+                let temp_i=(event.data.split(','))[1]
+                user.id=temp_i;
+
+                update_user(user);
+                
+            }
+            else{
+                console.log("recconected succsesfully"+event.data); // prints twitch because it recives two messages!!!!! dealy change
+                
+            }
+            setTimeout(()=>{
+                resolve();//return;
+            },500); // i need to play with the delay
+
+        },{once:true});
+    });
+
     
 }
